@@ -10,7 +10,6 @@ import net.imglib2.Cursor;
 import net.imglib2.Dimensions;
 import net.imglib2.FinalDimensions;
 import net.imglib2.IterableInterval;
-import net.imglib2.Localizable;
 import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessible;
 import net.imglib2.img.Img;
@@ -30,13 +29,13 @@ public class HoughTransformOpWeights< T extends BooleanType< T >, R extends Real
 	private StatusService statusService;
 
 	@Parameter( label = "Min circle radius", description = "Minimal radius, in pixel units, for the transform.", min = "1", type = ItemIO.INPUT )
-	private int minRadius = 1;
+	private long minRadius = 1;
 
 	@Parameter( label = "Max circle radius", description = "Maximal radius, in pixel units, for the transform.", min = "1", type = ItemIO.INPUT )
-	private int maxRadius = 50;
+	private long maxRadius = 50;
 
 	@Parameter( label = "Step radius", description = "Radius step, in pixel units, for the transform.", min = "1", type = ItemIO.INPUT, required = false )
-	private int stepRadius = 1;
+	private long stepRadius = 1;
 	
 	@Parameter( label = "Weights", description = "Weight image for the vote image.", type = ItemIO.INPUT )
 	private RandomAccessible< R > weights;
@@ -51,7 +50,7 @@ public class HoughTransformOpWeights< T extends BooleanType< T >, R extends Real
 
 		maxRadius = Math.max( minRadius, maxRadius );
 		minRadius = Math.min( minRadius, maxRadius );
-		final int nRadiuses = ( maxRadius - minRadius ) / stepRadius + 1;
+		final long nRadiuses = ( maxRadius - minRadius ) / stepRadius + 1;
 
 		/*
 		 * Voting image.
@@ -89,82 +88,13 @@ public class HoughTransformOpWeights< T extends BooleanType< T >, R extends Real
 			{
 				final IntervalView< DoubleType > slice = Views.hyperSlice( votes, numDimensions, i );
 				final RandomAccess< DoubleType > ra = Views.extendZero( slice ).randomAccess();
-				final int r = minRadius + i * stepRadius;
-				midPointAlgorithm( cursor, r, ra, weight );
+				final long r = minRadius + i * stepRadius;
+				MidPointAlgorithm.add( ra, cursor, r, weight );
 			}
 
 			statusService.showProgress( ++progress, ( int ) sum );
 		}
 
 		return votes;
-	}
-
-	private static final < R extends RealType< R > > void midPointAlgorithm( final Localizable position, final int radius, final RandomAccess< DoubleType > ra, final DoubleType weight )
-	{
-		final int x0 = position.getIntPosition( 0 );
-		final int y0 = position.getIntPosition( 1 );
-
-		/*
-		 * We "zig-zag" through indices, so that we reconstruct a continuous set
-		 * of of x,y coordinates, starting from the top of the circle.
-		 */
-
-		final int octantSize = ( int ) Math.floor( ( Math.sqrt( 2 ) * ( radius - 1 ) + 4 ) / 2 );
-
-		int x = 0;
-		int y = radius;
-		int f = 1 - radius;
-		int dx = 1;
-		int dy = -2 * radius;
-
-		for ( int i = 2; i < octantSize; i++ )
-		{
-			// We update x & y
-			if ( f > 0 )
-			{
-				y = y - 1;
-				dy = dy + 2;
-				f = f + dy;
-			}
-			x = x + 1;
-			dx = dx + 2;
-			f = f + dx;
-
-			// 1st octant.
-			ra.setPosition( x0 + x, 0 );
-			ra.setPosition( y0 + y, 1 );
-			ra.get().add( weight );
-
-			// 2nd octant.
-			ra.setPosition( x0 - x, 0 );
-			ra.get().add( weight );
-
-			// 3rd octant.
-			ra.setPosition( x0 + x, 0 );
-			ra.setPosition( y0 - y, 1 );
-			ra.get().add( weight );
-
-			// 4th octant.
-			ra.setPosition( x0 - x, 0 );
-			ra.get().add( weight );
-
-			// 5th octant.
-			ra.setPosition( x0 + y, 0 );
-			ra.setPosition( y0 + x, 1 );
-			ra.get().add( weight );
-
-			// 6th octant.
-			ra.setPosition( x0 - y, 0 );
-			ra.get().add( weight );
-
-			// 7th octant.
-			ra.setPosition( x0 + y, 0 );
-			ra.setPosition( y0 - x, 1 );
-			ra.get().add( weight );
-
-			// 8th octant.
-			ra.setPosition( x0 - y, 0 );
-			ra.get().add( weight );
-		}
 	}
 }
