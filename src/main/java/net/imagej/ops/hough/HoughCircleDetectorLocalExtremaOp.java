@@ -14,7 +14,7 @@ import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
 import net.imglib2.algorithm.localextrema.LocalExtrema;
-import net.imglib2.algorithm.localextrema.LocalExtrema.MinimumCheck;
+import net.imglib2.algorithm.localextrema.LocalExtrema.MaximumCheck;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
@@ -45,7 +45,7 @@ public class HoughCircleDetectorLocalExtremaOp< T extends RealType< T > & Native
 		final double threshold = 2. * Math.PI * minRadius / sensitivity;
 		final T t = Util.getTypeFromInterval( input );
 		t.setReal( threshold );
-		final MinimumCheck< T > check = new LocalExtrema.MinimumCheck< T >( t );
+		final MaximumCheck< T > check = new LocalExtrema.MaximumCheck< T >( t );
 		final ArrayList< Point > extrema = LocalExtrema.findLocalExtrema( input, check, es );
 
 		/*
