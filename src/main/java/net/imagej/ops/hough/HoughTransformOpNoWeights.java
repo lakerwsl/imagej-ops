@@ -10,7 +10,6 @@ import net.imglib2.Cursor;
 import net.imglib2.Dimensions;
 import net.imglib2.FinalDimensions;
 import net.imglib2.IterableInterval;
-import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
 import net.imglib2.type.BooleanType;
@@ -90,9 +89,8 @@ public class HoughTransformOpNoWeights< T extends BooleanType< T > >
 			for ( int i = 0; i < nRadiuses; i++ )
 			{
 				final IntervalView< DoubleType > slice = Views.hyperSlice( output, numDimensions, i );
-				final RandomAccess< DoubleType > ra = Views.extendZero( slice ).randomAccess();
 				final long r = minRadius + i * stepRadius;
-				MidPointAlgorithm.inc( ra, cursor, r );
+				MidPointAlgorithm.inc( Views.extendZero( slice ), cursor, r );
 			}
 
 			statusService.showProgress( ++progress, ( int ) sum );

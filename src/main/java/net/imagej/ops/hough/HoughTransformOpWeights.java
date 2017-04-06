@@ -60,9 +60,8 @@ public class HoughTransformOpWeights< T extends BooleanType< T >, R extends Real
 			for ( int i = 0; i < nRadiuses; i++ )
 			{
 				final IntervalView< DoubleType > slice = Views.hyperSlice( output, numDimensions, i );
-				final RandomAccess< DoubleType > ra = Views.extendZero( slice ).randomAccess();
 				final long r = minRadius + i * stepRadius;
-				MidPointAlgorithm.add( ra, cursor, r, weight );
+				MidPointAlgorithm.add( Views.extendZero( slice ), cursor, r, weight );
 			}
 
 			statusService.showProgress( ++progress, ( int ) sum );
