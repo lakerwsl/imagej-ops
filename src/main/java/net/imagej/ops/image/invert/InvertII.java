@@ -34,70 +34,70 @@ import net.imagej.ops.Ops;
 import net.imagej.ops.special.computer.AbstractUnaryComputerOp;
 import net.imagej.ops.special.computer.Computers;
 import net.imagej.ops.special.computer.UnaryComputerOp;
+import net.imagej.ops.special.function.Functions;
+import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imglib2.IterableInterval;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.util.Pair;
 
 import org.scijava.Priority;
+import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 /**
  * @author Martin Horn (University of Konstanz)
  */
 @Plugin(type = Ops.Image.Invert.class, priority = Priority.NORMAL_PRIORITY + 1)
-public class InvertII<I extends RealType<I>, O extends RealType<O>>
-	extends AbstractUnaryComputerOp<IterableInterval<I>, IterableInterval<O>>
-	implements Ops.Image.Invert
+public class InvertII<I extends RealType<I>> extends
+	AbstractUnaryComputerOp<IterableInterval<I>, IterableInterval<I>> implements
+	Ops.Image.Invert
 {
 
-	private UnaryComputerOp<IterableInterval<I>, IterableInterval<O>> mapper;
+	@Parameter(required = false)
+	private double min = Double.NaN;
 
+	@Parameter(required = false)
+	private double max = Double.NaN;
+
+	private UnaryComputerOp<IterableInterval<I>, IterableInterval<I>> mapper;
+	private UnaryFunctionOp<IterableInterval<I>, Pair<I, I>> minMaxFunc;
+
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	@Override
 	public void initialize() {
-		final I inType = in().firstElement().createVariable();
-		final double minVal = inType.getMinValue();
-		final UnaryComputerOp<I, O> invert = minVal < 0 ? new SignedRealInvert<>()
-			: new UnsignedRealInvert<>(inType.getMaxValue());
-		mapper = Computers.unary(ops(), Ops.Map.class, out(), in(), invert);
+		minMaxFunc = (UnaryFunctionOp) Functions.unary(ops(),
+			Ops.Stats.MinMax.class, Pair.class, IterableInterval.class);
+
+		mapper = Computers.unary(ops(), Ops.Map.class, out(), in(),
+			new AbstractUnaryComputerOp<I, I>()
+		{
+				@Override
+				public void compute(I input, I output) {
+					output.setReal((min+max)-input.getRealDouble());
+				}
+			});
 	}
 
 	@Override
 	public void compute(final IterableInterval<I> input,
-		final IterableInterval<O> output)
+		final IterableInterval<I> output)
 	{
+		// Min-max-based inversion
+		if (min == Double.NaN && max == Double.NaN) {
+		// MinMax conversion (min, max not provided
+			final Pair<I, I> minMax = minMaxFunc.calculate(input);
+			min = minMax.getA().getRealDouble();
+			max = minMax.getB().getRealDouble();
+		}
+
+		// Type-based inversion
+		if (min == Double.NaN && max == Double.NaN) {
+			I type = input.firstElement();
+			min = type.getMinValue();
+			max = type.getMaxValue();
+		}
+
 		mapper.compute(input, output);
-	}
-
-	private class SignedRealInvert<II extends RealType<II>, OO extends RealType<OO>>
-		extends AbstractUnaryComputerOp<II, OO>
-	{
-
-		@Override
-		public void compute(final II x, final OO output) {
-			final double value = x.getRealDouble() * -1.0 - 1;
-			output.setReal(value);
-		}
-
-	}
-
-	private class UnsignedRealInvert<II extends RealType<II>, OO extends RealType<OO>>
-		extends AbstractUnaryComputerOp<II, OO>
-	{
-
-		private final double max;
-
-		/**
-		 * @param max - maximum value of the range to invert about
-		 */
-		public UnsignedRealInvert(final double max) {
-			this.max = max;
-		}
-
-		@Override
-		public void compute(final II x, final OO output) {
-			final double value = max - x.getRealDouble();
-			output.setReal(value);
-		}
-
 	}
 
 }
