@@ -19,13 +19,17 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
-package net.imagej.ops.coloc;
+package net.imagej.ops.coloc.pearsons;
 
+import net.imagej.ops.Ops;
+import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.TwinCursor;
 import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.view.Views;
+
+import org.scijava.plugin.Plugin;
 
 import sc.fiji.coloc.gadgets.DataContainer;
 import sc.fiji.coloc.gadgets.ThresholdMode;
@@ -35,7 +39,11 @@ import sc.fiji.coloc.results.ResultHandler;
  * A class implementing the automatic finding of a threshold
  * used for Pearson colocalisation calculation.
  */
-public class AutoThresholdRegression<T extends RealType< T >> extends Algorithm<T> {
+@Plugin(type = Ops.Coloc.Pearsons.class)
+public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U>> extends
+	AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double> implements
+	Ops.Coloc.Pearsons {
+	
 	// Identifiers for choosing which implementation to use
 	public enum Implementation {Costes, Bisection};
 	Implementation implementation = Implementation.Bisection;
@@ -68,6 +76,13 @@ public class AutoThresholdRegression<T extends RealType< T >> extends Algorithm<
 		implementation = impl;
 	}
 
+
+	@Override
+	public Double calculate(Iterable<T> input1, Iterable<U> input2) {
+		// TODO Auto-generated method stub
+		return null;
+	} 
+	
 	@Override
 	public void execute(DataContainer<T> container)
 			throws MissingPreconditionException {

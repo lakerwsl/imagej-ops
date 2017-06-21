@@ -79,9 +79,9 @@ public class ColocNamespace extends AbstractNamespace {
 	
 	// -- pearsons --
 
-	@OpMethod(op = net.imagej.ops.coloc.pearsons.Pearsons.class)
+	@OpMethod(op = net.imagej.ops.coloc.pearsons.FastPearsons.class)
 	public <T extends RealType<T>, U extends RealType<U>> Double pearsons(final Iterable<T> image1, final Iterable<T> image2) {
-		final Double result = (Double) ops().run(net.imagej.ops.coloc.pearsons.Pearsons.class, image1, image2);
+		final Double result = (Double) ops().run(net.imagej.ops.coloc.pearsons.FastPearsons.class, image1, image2);
 		return result;
 	}
 
