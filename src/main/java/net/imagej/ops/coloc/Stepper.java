@@ -1,4 +1,4 @@
-package net.imagej.ops.coloc.pearsons;
+package net.imagej.ops.coloc;
 
 /**
  * A stepper is used to change some value with every update() call. It should

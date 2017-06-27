@@ -19,7 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
-package net.imagej.ops.coloc.pearsons;
+package net.imagej.ops.coloc;
 
 import net.imglib2.TwinCursor;
 import net.imglib2.type.numeric.RealType;

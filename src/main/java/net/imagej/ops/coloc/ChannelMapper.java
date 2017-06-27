@@ -1,4 +1,4 @@
-package net.imagej.ops.coloc.pearsons;
+package net.imagej.ops.coloc;
 
 /**
  * A channel mapper should map an input value to either channel one or

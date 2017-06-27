@@ -19,7 +19,7 @@
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
-package net.imagej.ops.coloc.pearsons;
+package net.imagej.ops.coloc;
 
 import net.imagej.ops.Ops;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
