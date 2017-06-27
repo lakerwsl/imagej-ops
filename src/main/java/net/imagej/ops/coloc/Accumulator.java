@@ -21,7 +21,6 @@
  */
 package net.imagej.ops.coloc;
 
-import net.imglib2.TwinCursor;
 import net.imglib2.type.numeric.RealType;
 
 /**

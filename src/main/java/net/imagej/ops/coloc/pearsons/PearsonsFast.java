@@ -2,6 +2,7 @@
 package net.imagej.ops.coloc.pearsons;
 
 import net.imagej.ops.Ops;
+import net.imagej.ops.coloc.Accumulator;
 import net.imagej.ops.coloc.ThresholdMode;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imglib2.type.numeric.RealType;
@@ -11,8 +12,6 @@ import net.imglib2.util.Pair;
 import org.scijava.ItemIO;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
-
-import sc.fiji.coloc.algorithms.Accumulator;
 
 /**
  * A class that represents the mean calculation of the two source images in the
