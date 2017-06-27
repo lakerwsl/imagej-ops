@@ -40,10 +40,13 @@ import sc.fiji.coloc.results.ResultHandler;
  * used for Pearson colocalisation calculation.
  */
 @Plugin(type = Ops.Coloc.Pearsons.class)
-public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U>> extends
-	AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double> implements
+public class AutoThresholdRegression<T extends RealType<T>> extends
+	AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double[]> implements
 	Ops.Coloc.Pearsons {
 	
+		
+		
+		
 	// Identifiers for choosing which implementation to use
 	public enum Implementation {Costes, Bisection};
 	Implementation implementation = Implementation.Bisection;
@@ -276,37 +279,6 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 		autoThresholdSlope = m;
 		autoThresholdIntercept = b;
 		bToYMeanRatio = b / container.getMeanCh2();
-
-		// add warnings if values are not in tolerance range
-		if ( Math.abs(bToYMeanRatio) > warnYInterceptToYMeanRatioThreshold ) {
-			addWarning("y-intercept far from zero",
-				"The ratio of the y-intercept of the auto threshold regression " +
-				"line to the mean value of Channel 2 is high. This means the " +
-				"y-intercept is far from zero, implying a significant positive " +
-				"or negative zero offset in the image data intensities. Maybe " +
-				"you should use a ROI. Maybe do a background subtraction in " +
-				"both channels. Make sure you didn't clip off the low " +
-				"intensities to zero. This might not affect Pearson's " +
-				"correlation values very much, but might harm other results.");
-		}
-
-		// add warning if threshold is above the image mean
-		if (ch1ThreshMax > ch1Mean) {
-			addWarning("Threshold of ch. 1 too high",
-					"Too few pixels are taken into account for above-threshold calculations. The threshold is above the channel's mean.");
-		}
-		if (ch2ThreshMax > ch2Mean) {
-			addWarning("Threshold of ch. 2 too high",
-					"Too few pixels are taken into account for above-threshold calculations. The threshold is above the channel's mean.");
-		}
-
-		// add warnings if values are below lowest pixel value of images
-		if ( ch1ThreshMax < container.getMinCh1() || ch2ThreshMax < container.getMinCh2() ) {
-			String msg = "The auto threshold method could not find a positive " +
-				"threshold, so thresholded results are meaningless.";
-			msg += implementation == Implementation.Costes ? "" : " Maybe you should try classic thresholding.";
-			addWarning("thresholds too low", msg);
-		}
 	}
 
 	/**

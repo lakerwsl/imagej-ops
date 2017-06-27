@@ -7,11 +7,11 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.IterablePair;
 import net.imglib2.util.Pair;
 
+import org.scijava.ItemIO;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
 import sc.fiji.coloc.algorithms.Accumulator;
-import sc.fiji.coloc.gadgets.ThresholdMode;
 
 /**
  * A class that represents the mean calculation of the two source images in the
@@ -20,29 +20,34 @@ import sc.fiji.coloc.gadgets.ThresholdMode;
  * @param <T>
  */
 @Plugin(type = Ops.Coloc.Pearsons.class)
-public class FastPearsons<T extends RealType<T>, U extends RealType<U>> extends
-	AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double> implements
+public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
+	AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double[]> implements
 	Ops.Coloc.Pearsons
 {
-	//@Parameter(required = false)
+	@Parameter(type = ItemIO.OUTPUT)
+	private Double pearsonsFastCorrelationValue;
+
+	@Parameter(type = ItemIO.OUTPUT)
+	private Double pearsonsFastCorrelationValueBelowThr;
+	
+	@Parameter(type = ItemIO.OUTPUT)
+	private Double pearsonsFastCorrelationValueAboveThr;
 	
 	@Override
-	public Double calculate(final Iterable<T> image1, final Iterable<U> image2) {
+	public Double[] calculate(final Iterable<T> image1, final Iterable<U> image2) {
 		// get the 2 images for the calculation of Pearson's
 		final Iterable<Pair<T, U>> samples = new IterablePair<>(image1, image2);
 
 		// get the thresholds of the images
-		final AutoThresholdRegression<T> autoThreshold = samples
-			.getAutoThreshold();
-		final T threshold1 = autoThreshold.getCh1MaxThreshold();
-		final T threshold2 = autoThreshold.getCh2MaxThreshold();
+		final T threshold1 = image1.getCh1MaxThreshold();
+		final T threshold2 = image2.getCh2MaxThreshold();
 
-		pearsonsCorrelationValue = fastPearsons(samples);
+		pearsonsFastCorrelationValue = fastPearsons(samples);
 
-		pearsonsCorrelationValueBelowThr = fastPearsons(samples, threshold1,
+		pearsonsFastCorrelationValueBelowThr = fastPearsons(samples, threshold1,
 			threshold2, ThresholdMode.Below);
 
-		pearsonsCorrelationValueAboveThr = fastPearsons(samples, threshold1,
+		pearsonsFastCorrelationValueAboveThr = fastPearsons(samples, threshold1,
 			threshold2, ThresholdMode.Above);
 	}
 

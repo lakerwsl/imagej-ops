@@ -32,6 +32,8 @@ package net.imagej.ops.coloc;
 
 import org.scijava.plugin.Plugin;
 
+import java.util.List;
+
 import net.imagej.ops.AbstractNamespace;
 import net.imagej.ops.Namespace;
 import net.imagej.ops.OpMethod;
@@ -79,9 +81,9 @@ public class ColocNamespace extends AbstractNamespace {
 	
 	// -- pearsons --
 
-	@OpMethod(op = net.imagej.ops.coloc.pearsons.FastPearsons.class)
-	public <T extends RealType<T>, U extends RealType<U>> Double pearsons(final Iterable<T> image1, final Iterable<T> image2) {
-		final Double result = (Double) ops().run(net.imagej.ops.coloc.pearsons.FastPearsons.class, image1, image2);
+	@OpMethod(op = net.imagej.ops.coloc.pearsons.PearsonsFast.class)
+	public <T extends RealType<T>, U extends RealType<U>> List<Double[]> pearsons(final Iterable<T> image1, final Iterable<T> image2) {
+		final List<Double[]> result = (List<Double[]>) ops().run(net.imagej.ops.coloc.pearsons.PearsonsFast.class, image1, image2);
 		return result;
 	}
 
