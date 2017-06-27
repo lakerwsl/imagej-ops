@@ -24,23 +24,26 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 	AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double[]> implements
 	Ops.Coloc.Pearsons
 {
+
 	@Parameter(type = ItemIO.OUTPUT)
 	private Double pearsonsFastCorrelationValue;
 
 	@Parameter(type = ItemIO.OUTPUT)
 	private Double pearsonsFastCorrelationValueBelowThr;
-	
+
 	@Parameter(type = ItemIO.OUTPUT)
 	private Double pearsonsFastCorrelationValueAboveThr;
-	
+
 	@Override
-	public Double[] calculate(final Iterable<T> image1, final Iterable<U> image2) {
+	public Double[] calculate(final Iterable<T> image1,
+		final Iterable<U> image2)
+	{
 		// get the 2 images for the calculation of Pearson's
 		final Iterable<Pair<T, U>> samples = new IterablePair<>(image1, image2);
 
 		// get the thresholds of the images
-		final T threshold1 = image1.getCh1MaxThreshold();
-		final T threshold2 = image2.getCh2MaxThreshold();
+		final Iterable<T> threshold1 = image1.getCh1MaxThreshold();
+		final Iterable<T> threshold2 = image2.getCh2MaxThreshold();
 
 		pearsonsFastCorrelationValue = fastPearsons(samples);
 
@@ -70,8 +73,8 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 	}
 
 	private <T extends RealType<T>> double fastPearsons(
-		final Iterable<Pair<T, U>> samples, final T thresholdCh1,
-		final T thresholdCh2, final ThresholdMode tMode)
+		final Iterable<Pair<T, U>> samples, final Iterable<T> threshold1,
+		final Iterable<T> threshold2, final ThresholdMode tMode)
 	{
 		// the actual accumulation of the image values is done in a separate object
 		Accumulator<T> acc;
@@ -90,8 +93,8 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 
 				@Override
 				final public boolean accept(final T type1, final T type2) {
-					return type1.compareTo(thresholdCh1) < 0 || type2.compareTo(
-						thresholdCh2) < 0;
+					return type1.compareTo(threshold1) < 0 || type2.compareTo(
+						threshold2) < 0;
 				}
 			};
 		}
@@ -100,8 +103,8 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 
 				@Override
 				final public boolean accept(final T type1, final T type2) {
-					return type1.compareTo(thresholdCh1) > 0 || type2.compareTo(
-						thresholdCh2) > 0;
+					return type1.compareTo(threshold1) > 0 || type2.compareTo(
+						threshold2) > 0;
 				}
 			};
 		}
