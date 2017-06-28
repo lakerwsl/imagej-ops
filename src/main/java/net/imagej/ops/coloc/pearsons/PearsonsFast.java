@@ -63,7 +63,6 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 	 * conditions for each channel. The cursor is not closed in here.
 	 *
 	 * @param <T> The image base type
-	 * @param cursor The cursor that defines the walk over both images.
 	 * @return Person's R value
 	 */
 	private <T extends RealType<T>> double fastPearsons(
@@ -77,32 +76,32 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 		final Iterable<T> threshold2, final ThresholdMode tMode)
 	{
 		// the actual accumulation of the image values is done in a separate object
-		Accumulator<T> acc;
+		Accumulator<T, U> acc;
 
 		if (tMode == ThresholdMode.None) {
-			acc = new Accumulator<T>(cursor) {
+			acc = new Accumulator<T, U>(samples) {
 
 				@Override
-				final public boolean accept(final T type1, final T type2) {
+				final public boolean accept(final T type1, final U type2) {
 					return true;
 				}
 			};
 		}
 		else if (tMode == ThresholdMode.Below) {
-			acc = new Accumulator<T>(cursor) {
+			acc = new Accumulator<T, U>(samples) {
 
 				@Override
-				final public boolean accept(final T type1, final T type2) {
+				final public boolean accept(final T type1, final U type2) {
 					return type1.compareTo(threshold1) < 0 || type2.compareTo(
 						threshold2) < 0;
 				}
 			};
 		}
 		else if (tMode == ThresholdMode.Above) {
-			acc = new Accumulator<T>(cursor) {
+			acc = new Accumulator<T, U>(samples) {
 
 				@Override
-				final public boolean accept(final T type1, final T type2) {
+				final public boolean accept(final T type1, final U type2) {
 					return type1.compareTo(threshold1) > 0 || type2.compareTo(
 						threshold2) > 0;
 				}
@@ -129,7 +128,7 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 	 * Does a sanity check for calculated Pearsons values. Wrong values can happen
 	 * for fast and classic implementation.
 	 *
-	 * @param val The value to check.
+	 * @param value The value to check.
 	 * @throws Exception
 	 */
 	private static void checkForSanity(final double value, final int iterations)

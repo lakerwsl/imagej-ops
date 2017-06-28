@@ -23,29 +23,22 @@ package net.imagej.ops.coloc;
 
 import net.imagej.ops.Ops;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
-import net.imglib2.RandomAccessibleInterval;
-import net.imglib2.TwinCursor;
-import net.imglib2.type.logic.BitType;
 import net.imglib2.type.numeric.RealType;
-import net.imglib2.view.Views;
+import net.imglib2.util.IterablePair;
+import net.imglib2.util.Pair;
 
+import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
+import org.python.icu.impl.TextTrieMap.ResultHandler;
 import org.scijava.plugin.Plugin;
-
-import sc.fiji.coloc.gadgets.DataContainer;
-import sc.fiji.coloc.gadgets.ThresholdMode;
-import sc.fiji.coloc.results.ResultHandler;
 
 /**
  * A class implementing the automatic finding of a threshold
  * used for Pearson colocalisation calculation.
  */
 @Plugin(type = Ops.Coloc.Pearsons.class)
-public class AutoThresholdRegression<T extends RealType<T>> extends
+public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U>> extends
 	AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double[]> implements
 	Ops.Coloc.Pearsons {
-	
-		
-		
 		
 	// Identifiers for choosing which implementation to use
 	public enum Implementation {Costes, Bisection};
@@ -67,13 +60,13 @@ public class AutoThresholdRegression<T extends RealType<T>> extends
 	// additional information
 	double bToYMeanRatio = 0.0;
 	//This is the Pearson's correlation we will use for further calculations
-	PearsonsCorrelation<T> pearsonsCorrellation;
+	PearsonsCorrelation pearsonsCorrellation;
 
-	public AutoThresholdRegression(PearsonsCorrelation<T> pc) {
+	public AutoThresholdRegression(PearsonsCorrelation pc) {
 		this(pc, Implementation.Costes);
 	}
 
-	public AutoThresholdRegression(PearsonsCorrelation<T> pc, Implementation impl) {
+	public AutoThresholdRegression(PearsonsCorrelation pc, Implementation impl) {
 		super("auto threshold regression");
 		pearsonsCorrellation = pc;
 		implementation = impl;
@@ -81,28 +74,13 @@ public class AutoThresholdRegression<T extends RealType<T>> extends
 
 
 	@Override
-	public Double calculate(Iterable<T> input1, Iterable<U> input2) {
-		// TODO Auto-generated method stub
-		return null;
-	} 
-	
-	@Override
-	public void execute(DataContainer<T> container)
-			throws MissingPreconditionException {
-		// get the 2 images for the calculation of Pearson's
-		final RandomAccessibleInterval<T> img1 = container.getSourceImage1();
-		final RandomAccessibleInterval<T> img2 = container.getSourceImage2();
-		final RandomAccessibleInterval<BitType> mask = container.getMask();
+	public Double[] calculate(Iterable<T> image1, Iterable<U> image2) {
 
-		double ch1Mean = container.getMeanCh1();
-		double ch2Mean = container.getMeanCh2();
-
+		final Iterable<Pair<T, U>> samples = new IterablePair<>(image1, image2);
+		final double ch1Mean = ops().stats().mean(image1).getRealDouble();
+		final double ch2Mean = ops().stats().mean(image2).getRealDouble();
+		
 		double combinedMean = ch1Mean + ch2Mean;
-
-		// get the cursors for iterating through pixels in images
-		TwinCursor<T> cursor = new TwinCursor<T>(
-				img1.randomAccess(), img2.randomAccess(),
-				Views.iterable(mask).localizingCursor());
 
 		// variables for summing up the
 		double ch1MeanDiffSum = 0.0, ch2MeanDiffSum = 0.0, combinedMeanDiffSum = 0.0;
@@ -110,12 +88,12 @@ public class AutoThresholdRegression<T extends RealType<T>> extends
 		int N = 0, NZero = 0;
 
 		// reference image data type
-		final T type = cursor.getFirst();
+		final T type = image1.getA();
 
-		while (cursor.hasNext()) {
-			cursor.fwd();
-			double ch1 = cursor.getFirst().getRealDouble();
-			double ch2 = cursor.getSecond().getRealDouble();
+		for (Pair<T, U> sample : samples) {
+
+			double ch1 = sample.getA().getRealDouble();
+			double ch2 = sample.getB().getRealDouble();
 
 			combinedSum = ch1 + ch2;
 
@@ -279,6 +257,9 @@ public class AutoThresholdRegression<T extends RealType<T>> extends
 		autoThresholdSlope = m;
 		autoThresholdIntercept = b;
 		bToYMeanRatio = b / container.getMeanCh2();
+		
+	// TODO Auto-generated method stub
+	return null;
 	}
 
 	/**
@@ -288,18 +269,6 @@ public class AutoThresholdRegression<T extends RealType<T>> extends
 	 */
 	public static double clamp(double val, double min, double max) {
 		return min > val ? min : max < val ? max : val;
-	}
-
-	@Override
-	public void processResults(ResultHandler<T> handler) {
-		super.processResults(handler);
-
-		handler.handleValue( "m (slope)", autoThresholdSlope , 2 );
-		handler.handleValue( "b (y-intercept)", autoThresholdIntercept, 2 );
-		handler.handleValue( "b to y-mean ratio", bToYMeanRatio, 2 );
-		handler.handleValue( "Ch1 Max Threshold", ch1MaxThreshold.getRealDouble(), 2);
-		handler.handleValue( "Ch2 Max Threshold", ch2MaxThreshold.getRealDouble(), 2);
-		handler.handleValue( "Threshold regression", implementation.toString());
 	}
 
 	public double getBToYMeanRatio() {
