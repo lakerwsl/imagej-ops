@@ -112,14 +112,15 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 		}
 
 		// for faster computation, have the inverse of N available
-		final double invCount = 1.0 / acc.count;
+		int count = acc.getCount();
+		final double invCount = 1.0 / count;
 
-		final double pearsons1 = acc.xy - (acc.x * acc.y * invCount);
-		final double pearsons2 = acc.xx - (acc.x * acc.x * invCount);
-		final double pearsons3 = acc.yy - (acc.y * acc.y * invCount);
+		final double pearsons1 = acc.getXY() - (acc.getX() * acc.getX() * invCount);
+		final double pearsons2 = acc.getXX() - (acc.getX() * acc.getX() * invCount);
+		final double pearsons3 = acc.getYY() - (acc.getY() * acc.getY() * invCount);
 		final double pearsonsR = pearsons1 / (Math.sqrt(pearsons2 * pearsons3));
 
-		checkForSanity(pearsonsR, acc.count);
+		checkForSanity(pearsonsR, count);
 
 		return pearsonsR;
 	}

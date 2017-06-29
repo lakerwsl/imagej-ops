@@ -36,8 +36,8 @@ import net.imglib2.util.Pair;
  * @author Ellen T Arena
  */
 public abstract class Accumulator<T extends RealType< T >, U extends RealType<U>> {
-	protected double x, y, xx, xy, yy;
-	protected int count;
+	private double x, y, xx, xy, yy;
+	private int count;
 
 	/**
 	 * The two values x and y from each iteration to get
