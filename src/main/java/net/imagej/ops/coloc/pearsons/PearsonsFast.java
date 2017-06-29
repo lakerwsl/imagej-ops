@@ -42,8 +42,8 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 		final Iterable<Pair<T, U>> samples = new IterablePair<>(image1, image2);
 
 		// get the thresholds of the images
-		final Iterable<T> threshold1 = image1.getCh1MaxThreshold();
-		final Iterable<T> threshold2 = image2.getCh2MaxThreshold();
+		final T threshold1 = image1.getCh1MaxThreshold();
+		final U threshold2 = image2.getCh2MaxThreshold();
 
 		pearsonsFastCorrelationValue = fastPearsons(samples);
 
@@ -58,22 +58,21 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 
 	/**
 	 * Calculates Person's R value by using a fast implementation of the
-	 * algorithm. This method allows the specification of a TwinValueRangeCursor.
-	 * With such a cursor one for instance can combine different thresholding
-	 * conditions for each channel. The cursor is not closed in here.
+	 * algorithm. 
 	 *
 	 * @param <T> The image base type
 	 * @return Person's R value
+	 * @throws Exception 
 	 */
 	private <T extends RealType<T>> double fastPearsons(
-		final Iterable<Pair<T, U>> samples)
+		final Iterable<Pair<T, U>> samples) throws Exception
 	{
 		return fastPearsons(samples, null, null, ThresholdMode.None);
 	}
 
 	private <T extends RealType<T>> double fastPearsons(
-		final Iterable<Pair<T, U>> samples, final Iterable<T> threshold1,
-		final Iterable<T> threshold2, final ThresholdMode tMode)
+		final Iterable<Pair<T, U>> samples, final T threshold1,
+		final U threshold2, final ThresholdMode tMode) throws Exception
 	{
 		// the actual accumulation of the image values is done in a separate object
 		Accumulator<T, U> acc;
@@ -92,8 +91,7 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 
 				@Override
 				final public boolean accept(final T type1, final U type2) {
-					return type1.compareTo(threshold1) < 0 || type2.compareTo(
-						threshold2) < 0;
+					return type1.compareTo(threshold1) < 0 || type2.compareTo(threshold2) < 0;
 				}
 			};
 		}
@@ -102,8 +100,7 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 
 				@Override
 				final public boolean accept(final T type1, final U type2) {
-					return type1.compareTo(threshold1) > 0 || type2.compareTo(
-						threshold2) > 0;
+					return type1.compareTo(threshold1) > 0 || type2.compareTo(threshold2) > 0;
 				}
 			};
 		}
@@ -112,7 +109,7 @@ public class PearsonsFast<T extends RealType<T>, U extends RealType<U>> extends
 		}
 
 		// for faster computation, have the inverse of N available
-		int count = acc.getCount();
+		final int count = acc.getCount();
 		final double invCount = 1.0 / count;
 
 		final double pearsons1 = acc.getXY() - (acc.getX() * acc.getX() * invCount);

@@ -59,8 +59,8 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 	 * one will NOT either. Pixels "in between (and including)" thresholds
 	 * do include the threshold values.
 	 */
-	Iterable<T> ch1MinThreshold, ch1MaxThreshold, ch2MinThreshold,
-			ch2MaxThreshold;
+	T ch1MinThreshold, ch1MaxThreshold;
+	U ch2MinThreshold, ch2MaxThreshold;
 	// additional information
 	double bToYMeanRatio = 0.0;
 
@@ -283,19 +283,19 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 		return autoThresholdIntercept;
 	}
 
-	public Iterable<T> getCh1MinThreshold() {
+	public T getCh1MinThreshold() {
 		return ch1MinThreshold;
 	}
 
-	public Iterable<T> getCh1MaxThreshold() {
+	public T getCh1MaxThreshold() {
 		return ch1MaxThreshold;
 	}
 
-	public Iterable<T> getCh2MinThreshold() {
+	public U getCh2MinThreshold() {
 		return ch2MinThreshold;
 	}
 
-	public Iterable<T> getCh2MaxThreshold() {
+	public U getCh2MaxThreshold() {
 		return ch2MaxThreshold;
 	}
 }
