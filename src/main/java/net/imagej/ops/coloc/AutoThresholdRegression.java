@@ -8,17 +8,18 @@
  * it under the terms of the GNU General Public License as
  * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public
  * License along with this program.  If not, see
  * <http://www.gnu.org/licenses/gpl-3.0.html>.
  * #L%
  */
+
 package net.imagej.ops.coloc;
 
 import net.imagej.ops.Ops;
@@ -27,21 +28,23 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.IterablePair;
 import net.imglib2.util.Pair;
 
-import org.apache.commons.math3.stat.correlation.PearsonsCorrelation;
-import org.python.icu.impl.TextTrieMap.ResultHandler;
 import org.scijava.plugin.Plugin;
 
 /**
- * A class implementing the automatic finding of a threshold
- * used for Pearson colocalisation calculation.
+ * A class implementing the automatic finding of a threshold used for Pearson
+ * colocalisation calculation.
  */
 @Plugin(type = Ops.Coloc.Pearsons.class)
-public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U>> extends
-	AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double[]> implements
-	Ops.Coloc.Pearsons {
-		
+public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U>>
+	extends AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double[]>
+	implements Ops.Coloc.Pearsons
+{
+
 	// Identifiers for choosing which implementation to use
-	public enum Implementation {Costes, Bisection};
+	public enum Implementation {
+			Costes, Bisection
+	}
+
 	Implementation implementation = Implementation.Bisection;
 	/* The threshold for ratio of y-intercept : y-mean to raise a warning about
 	 * it being to high or low, meaning far from zero. Don't use y-max as before,
@@ -56,44 +59,34 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 	 * one will NOT either. Pixels "in between (and including)" thresholds
 	 * do include the threshold values.
 	 */
-	Iterable<T> ch1MinThreshold, ch1MaxThreshold, ch2MinThreshold, ch2MaxThreshold;
+	Iterable<T> ch1MinThreshold, ch1MaxThreshold, ch2MinThreshold,
+			ch2MaxThreshold;
 	// additional information
 	double bToYMeanRatio = 0.0;
-	//This is the Pearson's correlation we will use for further calculations
-	PearsonsCorrelation pearsonsCorrellation;
-
-	public AutoThresholdRegression(PearsonsCorrelation pc) {
-		this(pc, Implementation.Costes);
-	}
-
-	public AutoThresholdRegression(PearsonsCorrelation pc, Implementation impl) {
-		super("auto threshold regression");
-		pearsonsCorrellation = pc;
-		implementation = impl;
-	}
-
 
 	@Override
-	public Double[] calculate(Iterable<T> image1, Iterable<U> image2) {
+	public Double[] calculate(final Iterable<T> image1,
+		final Iterable<U> image2)
+	{
 
 		final Iterable<Pair<T, U>> samples = new IterablePair<>(image1, image2);
 		final double ch1Mean = ops().stats().mean(image1).getRealDouble();
 		final double ch2Mean = ops().stats().mean(image2).getRealDouble();
-		
-		double combinedMean = ch1Mean + ch2Mean;
+
+		final double combinedMean = ch1Mean + ch2Mean;
 
 		// variables for summing up the
-		double ch1MeanDiffSum = 0.0, ch2MeanDiffSum = 0.0, combinedMeanDiffSum = 0.0;
+		double ch1MeanDiffSum = 0.0, ch2MeanDiffSum = 0.0, combinedMeanDiffSum =
+			0.0;
 		double combinedSum = 0.0;
 		int N = 0, NZero = 0;
 
-		// reference image data type
-		final T type = image1.getA();
+		for (final Pair<T, U> sample : samples) {
+			// reference image data type
+			final T type = sample.getA();
 
-		for (Pair<T, U> sample : samples) {
-
-			double ch1 = sample.getA().getRealDouble();
-			double ch2 = sample.getB().getRealDouble();
+			final double ch1 = sample.getA().getRealDouble();
+			final double ch2 = sample.getB().getRealDouble();
 
 			combinedSum = ch1 + ch2;
 
@@ -104,35 +97,36 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 			// calculate the numerators for the variances
 			ch1MeanDiffSum += (ch1 - ch1Mean) * (ch1 - ch1Mean);
 			ch2MeanDiffSum += (ch2 - ch2Mean) * (ch2 - ch2Mean);
-			combinedMeanDiffSum += (combinedSum - combinedMean) * (combinedSum - combinedMean);
+			combinedMeanDiffSum += (combinedSum - combinedMean) * (combinedSum -
+				combinedMean);
 
 			// count only pixels that are above zero
-			if ( (ch1 + ch2) > 0.00001)
-				NZero++;
+			if ((ch1 + ch2) > 0.00001) NZero++;
 
 			N++;
 		}
 
-		double ch1Variance = ch1MeanDiffSum / (N - 1);
-		double ch2Variance = ch2MeanDiffSum / (N - 1);
-		double combinedVariance = combinedMeanDiffSum / (N - 1.0);
+		final double ch1Variance = ch1MeanDiffSum / (N - 1);
+		final double ch2Variance = ch2MeanDiffSum / (N - 1);
+		final double combinedVariance = combinedMeanDiffSum / (N - 1.0);
 
-		//http://mathworld.wolfram.com/Covariance.html
-		//?2 = X2?(X)2
+		// http://mathworld.wolfram.com/Covariance.html
+		// ?2 = X2?(X)2
 		// = E[X2]?(E[X])2
-		//var (x+y) = var(x)+var(y)+2(covar(x,y));
-		//2(covar(x,y)) = var(x+y) - var(x)-var(y);
+		// var (x+y) = var(x)+var(y)+2(covar(x,y));
+		// 2(covar(x,y)) = var(x+y) - var(x)-var(y);
 
-		double ch1ch2Covariance = 0.5*(combinedVariance - (ch1Variance + ch2Variance));
+		final double ch1ch2Covariance = 0.5 * (combinedVariance - (ch1Variance +
+			ch2Variance));
 
 		// calculate regression parameters
-		double denom = 2*ch1ch2Covariance;
-		double num = ch2Variance - ch1Variance
-			+ Math.sqrt( (ch2Variance - ch1Variance) * (ch2Variance - ch1Variance)
-					+ (4 * ch1ch2Covariance *ch1ch2Covariance) );
+		final double denom = 2 * ch1ch2Covariance;
+		final double num = ch2Variance - ch1Variance + Math.sqrt((ch2Variance -
+			ch1Variance) * (ch2Variance - ch1Variance) + (4 * ch1ch2Covariance *
+				ch1ch2Covariance));
 
-		final double m = num/denom;
-		final double b = ch2Mean - m*ch1Mean ;
+		final double m = num / denom;
+		final double b = ch2Mean - m * ch1Mean;
 
 		// A stepper that walks thresholds
 		Stepper stepper;
@@ -148,47 +142,47 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 			mapper = new ChannelMapper() {
 
 				@Override
-				public double getCh1Threshold(double t) {
+				public double getCh1Threshold(final double t) {
 					return t;
 				}
 
 				@Override
-				public double getCh2Threshold(double t) {
+				public double getCh2Threshold(final double t) {
 					return (t * m) + b;
 				}
 			};
 			// Select a stepper
 			if (implementation == Implementation.Bisection) {
 				// Start at the midpoint of channel one
-				stepper = new BisectionStepper(
-					Math.abs(container.getMaxCh1() + container.getMinCh1()) * 0.5,
-					container.getMaxCh1());
-			} else {
+				stepper = new BisectionStepper(Math.abs(container.getMaxCh1() +
+					container.getMinCh1()) * 0.5, container.getMaxCh1());
+			}
+			else {
 				stepper = new SimpleStepper(container.getMaxCh1());
 			}
-
-		} else {
+		}
+		else {
 			// Map working threshold to channel two (because channel two has a
 			// larger maximum value.
 			mapper = new ChannelMapper() {
 
 				@Override
-				public double getCh1Threshold(double t) {
+				public double getCh1Threshold(final double t) {
 					return (t - b) / m;
 				}
 
 				@Override
-				public double getCh2Threshold(double t) {
+				public double getCh2Threshold(final double t) {
 					return t;
 				}
 			};
 			// Select a stepper
 			if (implementation == Implementation.Bisection) {
 				// Start at the midpoint of channel two
-				stepper = new BisectionStepper(
-					Math.abs(container.getMaxCh2() + container.getMinCh2()) * 0.5,
-					container.getMaxCh2());
-			} else {
+				stepper = new BisectionStepper(Math.abs(container.getMaxCh2() +
+					container.getMinCh2()) * 0.5, container.getMaxCh2());
+			}
+			else {
 				stepper = new SimpleStepper(container.getMaxCh2());
 			}
 		}
@@ -198,15 +192,15 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 		double ch2ThreshMax = container.getMaxCh2();
 
 		// define some image type specific threshold variables
-		T thresholdCh1 = type.createVariable();
-		T thresholdCh2 = type.createVariable();
+		final T thresholdCh1 = type.createVariable();
+		final T thresholdCh2 = type.createVariable();
 		// reset the previously created cursor
 		cursor.reset();
 
 		/* Get min and max value of image data type. Since type of image
 		 * one and two are the same, we dont't need to distinguish them.
 		 */
-		T dummyT = type.createVariable();
+		final T dummyT = type.createVariable();
 		final double minVal = dummyT.getMinValue();
 		final double maxVal = dummyT.getMaxValue();
 
@@ -223,12 +217,12 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 
 			try {
 				// do persons calculation within the limits
-				final double currentPersonsR =
-						pearsonsCorrellation.calculatePearsons(cursor,
-						ch1Mean, ch2Mean, thresholdCh1, thresholdCh2,
-						ThresholdMode.Below);
+				final double currentPersonsR = pearsonsCorrellation.calculatePearsons(
+					cursor, ch1Mean, ch2Mean, thresholdCh1, thresholdCh2,
+					ThresholdMode.Below);
 				stepper.update(currentPersonsR);
-			} catch (MissingPreconditionException e) {
+			}
+			catch (final MissingPreconditionException e) {
 				/* the exception that could occur is due to numerical
 				 * problems within the Pearsons calculation. */
 				stepper.update(Double.NaN);
@@ -257,9 +251,9 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 		autoThresholdSlope = m;
 		autoThresholdIntercept = b;
 		bToYMeanRatio = b / container.getMeanCh2();
-		
-	// TODO Auto-generated method stub
-	return null;
+
+		// TODO Auto-generated method stub
+		return null;
 	}
 
 	/**
@@ -267,7 +261,9 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 	 * returned. Accordingly, max is returned if the value is larger. If it is
 	 * neither, the value itself is returned.
 	 */
-	public static double clamp(double val, double min, double max) {
+	public static double clamp(final double val, final double min,
+		final double max)
+	{
 		return min > val ? min : max < val ? max : val;
 	}
 
