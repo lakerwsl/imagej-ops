@@ -109,6 +109,7 @@ import net.imglib2.view.MixedTransformView;
 import net.imglib2.view.RandomAccessibleOnRealRandomAccessible;
 import net.imglib2.view.StackView;
 import net.imglib2.view.StackView.StackAccessMode;
+import net.imglib2.view.SubsampleIntervalView;
 import net.imglib2.view.SubsampleView;
 import net.imglib2.view.TransformView;
 import net.imglib2.view.composite.CompositeIntervalView;
@@ -894,6 +895,22 @@ public class TransformNamespace extends AbstractNamespace {
 	{
 		return (SubsampleView<T>) ops().run(Ops.Transform.SubsampleView.class, input, step);
 	}
+	
+	/**
+	 * Sample only every <em>step</em><sup>th</sup> value of a source
+	 * {@link RandomAccessible} while preserving interval bounds. This is effectively an integer scaling
+	 * transformation.
+	 * 
+	 * @param input
+	 * @param step
+	 * @return
+	 */
+	@OpMethod(op = net.imagej.ops.transform.subsampleView.IntervalSubsampleView.class)
+	public <T> SubsampleIntervalView<T> subsampleView(
+		final RandomAccessibleInterval<T> input, final long step)
+	{
+		return (SubsampleIntervalView<T>) ops().run(Ops.Transform.SubsampleView.class, input, step);
+	}
 
 	/**
 	 * Translate the source view by the given translation vector. Pixel <em>x</em>
@@ -1077,6 +1094,23 @@ public class TransformNamespace extends AbstractNamespace {
 		final RandomAccessible<T> input, final long... steps)
 	{
 		return (SubsampleView<T>) ops().run(Ops.Transform.SubsampleView.class, input,
+			steps);
+	}
+	
+	/**
+	 * Sample only every <em>step<sub>d</sub></em><sup>th</sup> value of a
+	 * source {@link RandomAccessible} while preserving interval bounds. This is
+	 * effectively an integer scaling transformation.
+	 * 
+	 * @param input
+	 * @param steps
+	 * @return
+	 */
+	@OpMethod(op = net.imagej.ops.transform.subsampleView.SubsampleIntervalViewStepsForDims.class)
+	public <T> SubsampleIntervalView<T> subsampleView(
+		final RandomAccessibleInterval<T> input, final long... steps)
+	{
+		return (SubsampleIntervalView<T>) ops().run(Ops.Transform.SubsampleView.class, input,
 			steps);
 	}
 
