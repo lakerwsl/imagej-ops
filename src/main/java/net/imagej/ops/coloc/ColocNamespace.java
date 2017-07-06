@@ -30,15 +30,14 @@
 
 package net.imagej.ops.coloc;
 
-import org.scijava.plugin.Plugin;
-
-import java.util.List;
-
 import net.imagej.ops.AbstractNamespace;
 import net.imagej.ops.Namespace;
 import net.imagej.ops.OpMethod;
+import net.imagej.ops.coloc.pearsons.PearsonsResult;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.DoubleType;
+
+import org.scijava.plugin.Plugin;
 
 /**
  * The coloc namespace contains ops that facilitate colocalization analysis. b
@@ -51,39 +50,66 @@ public class ColocNamespace extends AbstractNamespace {
 	// -- icq --
 
 	@OpMethod(op = net.imagej.ops.coloc.icq.LiICQ.class)
-	public <T extends RealType<T>, U extends RealType<U>> Double icq(final Iterable<T> image1, final Iterable<T> image2,
-			final DoubleType mean1, final DoubleType mean2) {
-		final Double result = (Double) ops().run(net.imagej.ops.coloc.icq.LiICQ.class, image1, image2, mean1, mean2);
+	public <T extends RealType<T>, U extends RealType<U>> Double icq(
+		final Iterable<T> image1, final Iterable<U> image2, final DoubleType mean1,
+		final DoubleType mean2)
+	{
+		final Double result = (Double) ops().run(
+			net.imagej.ops.coloc.icq.LiICQ.class, image1, image2, mean1, mean2);
 		return result;
 	}
 
 	@OpMethod(op = net.imagej.ops.coloc.icq.LiICQ.class)
-	public <T extends RealType<T>, U extends RealType<U>> Double icq(final Iterable<T> image1, final Iterable<T> image2,
-			final DoubleType mean1) {
-		final Double result = (Double) ops().run(net.imagej.ops.coloc.icq.LiICQ.class, image1, image2, mean1);
+	public <T extends RealType<T>, U extends RealType<U>> Double icq(
+		final Iterable<T> image1, final Iterable<U> image2, final DoubleType mean1)
+	{
+		final Double result = (Double) ops().run(
+			net.imagej.ops.coloc.icq.LiICQ.class, image1, image2, mean1);
 		return result;
 	}
 
 	@OpMethod(op = net.imagej.ops.coloc.icq.LiICQ.class)
-	public <T extends RealType<T>, U extends RealType<U>> Double icq(final Iterable<T> image1,
-			final Iterable<T> image2) {
-		final Double result = (Double) ops().run(net.imagej.ops.coloc.icq.LiICQ.class, image1, image2);
+	public <T extends RealType<T>, U extends RealType<U>> Double icq(
+		final Iterable<T> image1, final Iterable<U> image2)
+	{
+		final Double result = (Double) ops().run(
+			net.imagej.ops.coloc.icq.LiICQ.class, image1, image2);
 		return result;
 	}
 
 	// -- kendallTau --
 
 	@OpMethod(op = net.imagej.ops.coloc.kendallTau.KendallTauBRank.class)
-	public <T extends RealType<T>, U extends RealType<U>> Double kendallTau(final Iterable<T> image1, final Iterable<T> image2) {
-		final Double result = (Double) ops().run(net.imagej.ops.coloc.kendallTau.KendallTauBRank.class, image1, image2);
+	public <T extends RealType<T>, U extends RealType<U>> Double kendallTau(
+		final Iterable<T> image1, final Iterable<U> image2)
+	{
+		final Double result = (Double) ops().run(
+			net.imagej.ops.coloc.kendallTau.KendallTauBRank.class, image1, image2);
 		return result;
 	}
-	
+
 	// -- pearsons --
 
 	@OpMethod(op = net.imagej.ops.coloc.pearsons.PearsonsFast.class)
-	public <T extends RealType<T>, U extends RealType<U>> List<Double[]> pearsons(final Iterable<T> image1, final Iterable<T> image2) {
-		final List<Double[]> result = (List<Double[]>) ops().run(net.imagej.ops.coloc.pearsons.PearsonsFast.class, image1, image2);
+	public <T extends RealType<T>, U extends RealType<U>> PearsonsResult pearsons(
+		final Iterable<T> image1, final Iterable<U> image2)
+	{
+		final PearsonsResult result = (PearsonsResult) ops().run(
+			net.imagej.ops.coloc.pearsons.PearsonsFast.class, image1, image2);
+		return result;
+	}
+
+	@OpMethod(op = net.imagej.ops.coloc.pearsons.PearsonsFast.class)
+	public <T extends RealType<T>, U extends RealType<U>> PearsonsResult  pearsons(final Iterable<T> image1, final Iterable<U> image2, final T threshold1) {
+		final PearsonsResult result =
+			(PearsonsResult) ops().run(net.imagej.ops.coloc.pearsons.PearsonsFast.class, image1, image2, threshold1);
+		return result;
+	}
+
+	@OpMethod(op = net.imagej.ops.coloc.pearsons.PearsonsFast.class)
+	public <T extends RealType<T>, U extends RealType<U>> PearsonsResult  pearsons(final Iterable<T> image1, final Iterable<U> image2, final T threshold1, final U threshold2) {
+		final PearsonsResult result =
+			(PearsonsResult) ops().run(net.imagej.ops.coloc.pearsons.PearsonsFast.class, image1, image2, threshold1, threshold2);
 		return result;
 	}
 
