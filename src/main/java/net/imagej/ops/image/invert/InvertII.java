@@ -1,5 +1,5 @@
 /*
- * #%L
+  * #%L
  * ImageJ software for multidimensional image processing and analysis.
  * %%
  * Copyright (C) 2014 - 2017 Board of Regents of the University of
@@ -48,55 +48,41 @@ import org.scijava.plugin.Plugin;
  * @author Martin Horn (University of Konstanz)
  */
 @Plugin(type = Ops.Image.Invert.class, priority = Priority.NORMAL_PRIORITY + 1)
-public class InvertII<I extends RealType<I>> extends
-	AbstractUnaryComputerOp<IterableInterval<I>, IterableInterval<I>> implements
+public class InvertII<I extends RealType<I>, O extends RealType<O>> extends
+	AbstractUnaryComputerOp<IterableInterval<I>, IterableInterval<O>> implements
 	Ops.Image.Invert
 {
 
 	@Parameter(required = false)
-	private double min = Double.NaN;
+	private I min;
 
 	@Parameter(required = false)
-	private double max = Double.NaN;
+	private I max;
 
-	private UnaryComputerOp<IterableInterval<I>, IterableInterval<I>> mapper;
-	private UnaryFunctionOp<IterableInterval<I>, Pair<I, I>> minMaxFunc;
-
-	@SuppressWarnings({ "unchecked", "rawtypes" })
-	@Override
-	public void initialize() {
-		minMaxFunc = (UnaryFunctionOp) Functions.unary(ops(),
-			Ops.Stats.MinMax.class, Pair.class, IterableInterval.class);
-
-		mapper = Computers.unary(ops(), Ops.Map.class, out(), in(),
-			new AbstractUnaryComputerOp<I, I>()
-		{
-				@Override
-				public void compute(I input, I output) {
-					output.setReal((min+max)-input.getRealDouble());
-				}
-			});
-	}
+	private UnaryComputerOp<IterableInterval<I>, IterableInterval<O>> mapper;
 
 	@Override
 	public void compute(final IterableInterval<I> input,
-		final IterableInterval<I> output)
+		final IterableInterval<O> output)
 	{
-		// Min-max-based inversion
-		if (min == Double.NaN && max == Double.NaN) {
-		// MinMax conversion (min, max not provided
-			final Pair<I, I> minMax = minMaxFunc.calculate(input);
-			min = minMax.getA().getRealDouble();
-			max = minMax.getB().getRealDouble();
-		}
+		if (mapper == null) {
+			final double minValue = min == null ? input.firstElement().getMinValue() : //
+				min.getRealDouble();
+			final double maxValue = max == null ? input.firstElement().getMaxValue() : //
+				max.getRealDouble();
+			final double minMax = maxValue + minValue;
+			mapper = Computers.unary(ops(), Ops.Map.class, output, input,
+				new AbstractUnaryComputerOp<I, O>()
+			{
 
-		// Type-based inversion
-		if (min == Double.NaN && max == Double.NaN) {
-			I type = input.firstElement();
-			min = type.getMinValue();
-			max = type.getMaxValue();
+					@Override
+					public void compute(I in, O out) {
+						
+							out.setReal(minMax - in.getRealDouble());
+						
+					}
+				});
 		}
-
 		mapper.compute(input, output);
 	}
 

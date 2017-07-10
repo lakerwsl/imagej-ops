@@ -33,6 +33,8 @@ package net.imagej.ops.image.invert;
 import static org.junit.Assert.assertEquals;
 
 import net.imagej.ops.AbstractOpTest;
+import net.imglib2.Cursor;
+import net.imglib2.RandomAccess;
 import net.imglib2.img.Img;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
@@ -53,7 +55,7 @@ public class InvertTest extends AbstractOpTest {
 		Img<ByteType> out = in.factory().create(in, new ByteType());
 
 		ByteType type = in.firstElement();
-		ops.run(InvertII.class, out, in, type.getMinValue(), type.getMaxValue());
+		ops.run(InvertII.class, out, in);
 
 		ByteType firstIn = in.firstElement();
 		ByteType firstOut = out.firstElement();
@@ -69,8 +71,11 @@ public class InvertTest extends AbstractOpTest {
 		// unsigned type test
 		Img<UnsignedByteType> in = generateUnsignedByteArrayTestImg(true, 5, 5);
 		Img<UnsignedByteType> out = in.factory().create(in, new UnsignedByteType());
+		
+		UnsignedByteType min = new UnsignedByteType(10);
+		UnsignedByteType max = new UnsignedByteType(40);
 
-		ops.run(InvertII.class, out, in, new UnsignedByteType(10), new UnsignedByteType(40));
+		ops.run(InvertII.class, out, in, min, max);
 
 		Pair<UnsignedByteType, UnsignedByteType> minMax = ops.stats().minMax(in);
 		UnsignedByteType firstIn = in.firstElement();
@@ -89,7 +94,7 @@ public class InvertTest extends AbstractOpTest {
 		Img<UnsignedByteType> out = in.factory().create(in, new UnsignedByteType());
 
 		UnsignedByteType type = in.firstElement();
-		ops.run(InvertII.class, out, in, type.getMinValue(), type.getMaxValue());
+		ops.run(InvertII.class, out, in);
 
 		UnsignedByteType firstIn = in.firstElement();
 		UnsignedByteType firstOut = out.firstElement();
