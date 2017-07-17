@@ -40,6 +40,7 @@ import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imglib2.IterableInterval;
 import net.imglib2.type.numeric.RealType;
+import net.imglib2.type.numeric.integer.UnsignedVariableBitLengthType;
 import net.imglib2.util.Pair;
 
 import org.scijava.Priority;
@@ -49,7 +50,7 @@ import org.scijava.plugin.Plugin;
 /**
  * @author Martin Horn (University of Konstanz)
  */
-@Plugin(type = Ops.Image.Invert.class, priority = Priority.NORMAL_PRIORITY + 1)
+@Plugin(type = Ops.Image.Invert.class, priority = Priority.NORMAL_PRIORITY)
 public class InvertII<I extends RealType<I>, O extends RealType<O>> extends
 	AbstractUnaryComputerOp<IterableInterval<I>, IterableInterval<O>> implements
 	Ops.Image.Invert
@@ -79,15 +80,29 @@ public class InvertII<I extends RealType<I>, O extends RealType<O>> extends
 
 					@Override
 					public void compute(I in, O out) {
-						
-						if(in.getRealDouble() >= out.getMaxValue() || (minMax - in.getRealDouble()) <= out.getMinValue()) out.setReal(out.getMinValue());
-						else if(in.getRealDouble() <= out.getMinValue() || (minMax - in.getRealDouble()) >= out.getMaxValue()) out.setReal(out.getMaxValue());
-						else 	out.setReal(minMax - in.getRealDouble());
-						
+						if (in.getRealDouble() >= out.getMaxValue() || (minMax - in
+							.getRealDouble()) <= out.getMinValue()) out.setReal(out
+								.getMinValue());
+						else if (in.getRealDouble() <= out.getMinValue() || (minMax - in
+							.getRealDouble()) >= out.getMaxValue()) out.setReal(out
+								.getMaxValue());
+						else out.setReal(minMax - in.getRealDouble());
+
 					}
 				});
 		}
 		mapper.compute(input, output);
+	}
+
+	public static <T extends RealType<T>> T minValue(T type) {
+		if (type instanceof UnsignedVariableBitLengthType) {
+			return (T) new UnsignedVariableBitLengthType(0, 1);
+		}
+		else {
+			T min = type.createVariable();
+			min.setReal(min.getMinValue());
+			return min;
+		}
 	}
 
 }
