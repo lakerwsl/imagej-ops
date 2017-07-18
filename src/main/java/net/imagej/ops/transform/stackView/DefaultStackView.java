@@ -46,11 +46,11 @@ import org.scijava.plugin.Plugin;
  */
 @Plugin(type = Ops.Transform.StackView.class)
 public class DefaultStackView<T>
-		extends AbstractUnaryFunctionOp<List<RandomAccessibleInterval<T>>, RandomAccessibleInterval<T>>
+		extends AbstractUnaryFunctionOp<List<? extends RandomAccessibleInterval<T>>, RandomAccessibleInterval<T>>
 		implements Ops.Transform.StackView {
 
 	@Override
-	public RandomAccessibleInterval<T> calculate(List<RandomAccessibleInterval<T>> input) {
+	public RandomAccessibleInterval<T> calculate(List<? extends RandomAccessibleInterval<T>> input) {
 		return Views.stack(input);
 	}
 
