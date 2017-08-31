@@ -20,10 +20,16 @@
  * #L%
  */
 
-package net.imagej.ops.coloc;
+package net.imagej.ops.coloc.threshold;
 
 import net.imagej.ops.Ops;
+import net.imagej.ops.coloc.BisectionStepper;
+import net.imagej.ops.coloc.ChannelMapper;
+import net.imagej.ops.coloc.Stepper;
+import net.imagej.ops.coloc.ThresholdMode;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
+import net.imagej.ops.special.function.Functions;
+import net.imagej.ops.special.function.UnaryFunctionOp;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.IterablePair;
 import net.imglib2.util.Pair;
@@ -32,46 +38,48 @@ import org.scijava.plugin.Plugin;
 
 /**
  * A class implementing the automatic finding of a threshold used for Pearson
- * colocalisation calculation.
+ * and Manders colocalisation calculations using the Bisection stepper
+ * implementation.
+ *
+ * @author Ellen T Arena
  */
-@Plugin(type = Ops.Coloc.Pearsons.class)
-public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U>>
-	extends AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, Double[]>
-	implements Ops.Coloc.Pearsons
+@Plugin(type = Ops.Coloc.Threshold.class)
+public class AutothresholdRegressionBisection<T extends RealType<T>, U extends RealType<U>>
+	extends AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, AutothresholdRegressionResults>
+	implements Ops.Coloc.Threshold
 {
 
-	// Identifiers for choosing which implementation to use
-	public enum Implementation {
-			Costes, Bisection
-	}
-
-	Implementation implementation = Implementation.Bisection;
-	/* The threshold for ratio of y-intercept : y-mean to raise a warning about
-	 * it being to high or low, meaning far from zero. Don't use y-max as before,
-	 * since this could be a very high value outlier. Mean is probably more
-	 * reliable.
-	 */
-	final double warnYInterceptToYMeanRatioThreshold = 0.01;
-	// the slope and and intercept of the regression line
-	double autoThresholdSlope = 0.0, autoThresholdIntercept = 0.0;
-	/* The thresholds for both image channels. Pixels below a lower
-	 * threshold do NOT include the threshold and pixels above an upper
-	 * one will NOT either. Pixels "in between (and including)" thresholds
-	 * do include the threshold values.
-	 */
-	T ch1MinThreshold, ch1MaxThreshold;
-	U ch2MinThreshold, ch2MaxThreshold;
-	// additional information
-	double bToYMeanRatio = 0.0;
+	private UnaryFunctionOp<Iterable<T>, T> ch1MeanOp;
+	private UnaryFunctionOp<Iterable<U>, U> ch2MeanOp;
+	private UnaryFunctionOp<Iterable<T>, Pair<T, T>> ch1MinMaxOp;
+	private UnaryFunctionOp<Iterable<U>, Pair<U, U>> ch2MinMaxOp;
 
 	@Override
-	public Double[] calculate(final Iterable<T> image1,
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	public void initialize() {
+		ch1MeanOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.Mean.class,
+			in1().iterator().next().getClass(), in1());
+		ch2MeanOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.Mean.class,
+			in2().iterator().next().getClass(), in2());
+		ch1MinMaxOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.Mean.class,
+			Pair.class, in1());
+		ch2MinMaxOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.Mean.class,
+			Pair.class, in2());
+	}
+
+	@Override
+	public AutothresholdRegressionResults calculate(final Iterable<T> image1,
 		final Iterable<U> image2)
 	{
-
 		final Iterable<Pair<T, U>> samples = new IterablePair<>(image1, image2);
-		final double ch1Mean = ops().stats().mean(image1).getRealDouble();
-		final double ch2Mean = ops().stats().mean(image2).getRealDouble();
+		final double ch1Mean = ch1MeanOp.calculate(image1).getRealDouble();
+		final double ch2Mean = ch2MeanOp.calculate(image2).getRealDouble();
+		final Pair<T, T> ch1minMax = ch1MinMaxOp.calculate(image1);
+		double ch1Min = ch1minMax.getA().getRealDouble();
+		double ch1Max = ch1minMax.getB().getRealDouble();
+		final Pair<U, U> ch2minMax = ch2MinMaxOp.calculate(image2);
+		double ch2Min = ch2minMax.getA().getRealDouble();
+		double ch2Max = ch2minMax.getB().getRealDouble();
 
 		final double combinedMean = ch1Mean + ch2Mean;
 
@@ -151,15 +159,10 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 					return (t * m) + b;
 				}
 			};
-			// Select a stepper
-			if (implementation == Implementation.Bisection) {
-				// Start at the midpoint of channel one
-				stepper = new BisectionStepper(Math.abs(container.getMaxCh1() +
-					container.getMinCh1()) * 0.5, container.getMaxCh1());
-			}
-			else {
-				stepper = new SimpleStepper(container.getMaxCh1());
-			}
+			// Stepper ...
+			// Start at the midpoint of channel one
+			stepper = new BisectionStepper(Math.abs(ch1Max + ch1Min) * 0.5, ch1Max);
+
 		}
 		else {
 			// Map working threshold to channel two (because channel two has a
@@ -176,15 +179,9 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 					return t;
 				}
 			};
-			// Select a stepper
-			if (implementation == Implementation.Bisection) {
-				// Start at the midpoint of channel two
-				stepper = new BisectionStepper(Math.abs(container.getMaxCh2() +
-					container.getMinCh2()) * 0.5, container.getMaxCh2());
-			}
-			else {
-				stepper = new SimpleStepper(container.getMaxCh2());
-			}
+			// Stepper ...
+			// Start at the midpoint of channel two
+			stepper = new BisectionStepper(Math.abs(ch2Max + ch2Min) * 0.5, ch2Max);
 		}
 
 		// Min threshold not yet implemented
@@ -283,16 +280,8 @@ public class AutoThresholdRegression<T extends RealType<T>, U extends RealType<U
 		return autoThresholdIntercept;
 	}
 
-	public T getCh1MinThreshold() {
-		return ch1MinThreshold;
-	}
-
 	public T getCh1MaxThreshold() {
 		return ch1MaxThreshold;
-	}
-
-	public U getCh2MinThreshold() {
-		return ch2MinThreshold;
 	}
 
 	public U getCh2MaxThreshold() {

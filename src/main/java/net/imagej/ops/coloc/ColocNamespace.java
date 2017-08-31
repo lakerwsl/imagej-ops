@@ -40,9 +40,10 @@ import net.imglib2.type.numeric.real.DoubleType;
 import org.scijava.plugin.Plugin;
 
 /**
- * The coloc namespace contains ops that facilitate colocalization analysis. b
+ * The coloc namespace contains ops that facilitate colocalization analysis.
  *
  * @author Curtis Rueden
+ * @author Ellen T Arena
  */
 @Plugin(type = Namespace.class)
 public class ColocNamespace extends AbstractNamespace {
@@ -114,7 +115,6 @@ public class ColocNamespace extends AbstractNamespace {
 	}
 	
 	//-- pearsonsClassic --
-	
 
 	@OpMethod(op = net.imagej.ops.coloc.pearsonsClassic.PearsonsClassic.class)
 	public <T extends RealType<T>, U extends RealType<U>> PearsonsResult pearsonsClassic(final Iterable<T> in1, final Iterable<U> in2) {
@@ -148,6 +148,17 @@ public class ColocNamespace extends AbstractNamespace {
 	public <T extends RealType<T>, U extends RealType<U>> PearsonsResult pearsonsClassic(final Iterable<T> in1, final Iterable<U> in2, final DoubleType mean1, final DoubleType mean2, final T threshold1, final U threshold2) {
 		final PearsonsResult result =
 			(PearsonsResult) ops().run(net.imagej.ops.coloc.pearsonsClassic.PearsonsClassic.class, in1, in2, mean1, mean2, threshold1, threshold2);
+		return result;
+	}
+
+	//-- threshold --
+
+	@OpMethod(op = net.imagej.ops.coloc.threshold.AutothresholdRegression.class)
+	public <T extends RealType<T>, U extends RealType<U>> Double autothresholdRegression(
+		final Iterable<T> image1, final Iterable<U> image2)
+	{
+		final Double result = (Double) ops().run(
+			net.imagej.ops.coloc.threshold.AutothresholdRegression.class, image1, image2);
 		return result;
 	}
 
