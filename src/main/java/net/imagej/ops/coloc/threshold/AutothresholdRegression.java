@@ -26,7 +26,6 @@ import net.imagej.ops.Ops;
 import net.imagej.ops.coloc.BisectionStepper;
 import net.imagej.ops.coloc.ChannelMapper;
 import net.imagej.ops.coloc.Stepper;
-import net.imagej.ops.coloc.ThresholdMode;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
@@ -44,8 +43,9 @@ import org.scijava.plugin.Plugin;
  * @author Ellen T Arena
  */
 @Plugin(type = Ops.Coloc.Threshold.class)
-public class AutothresholdRegressionBisection<T extends RealType<T>, U extends RealType<U>>
-	extends AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, AutothresholdRegressionResults>
+public class AutothresholdRegression<T extends RealType<T>, U extends RealType<U>>
+	extends
+	AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, AutothresholdRegressionResults<T,U>>
 	implements Ops.Coloc.Threshold
 {
 
@@ -68,9 +68,11 @@ public class AutothresholdRegressionBisection<T extends RealType<T>, U extends R
 	}
 
 	@Override
-	public AutothresholdRegressionResults calculate(final Iterable<T> image1,
+	public AutothresholdRegressionResults<T,U> calculate(final Iterable<T> image1,
 		final Iterable<U> image2)
 	{
+		AutothresholdRegressionResults<T,U> results =
+			new AutothresholdRegressionResults<T,U>();
 		final Iterable<Pair<T, U>> samples = new IterablePair<>(image1, image2);
 		final double ch1Mean = ch1MeanOp.calculate(image1).getRealDouble();
 		final double ch2Mean = ch2MeanOp.calculate(image2).getRealDouble();
@@ -185,21 +187,29 @@ public class AutothresholdRegressionBisection<T extends RealType<T>, U extends R
 		}
 
 		// Min threshold not yet implemented
-		double ch1ThreshMax = container.getMaxCh1();
-		double ch2ThreshMax = container.getMaxCh2();
+		double ch1ThreshMax = ch1Max;
+		double ch2ThreshMax = ch2Max;
+		
+		// extract sampling types of images
+		T type1 = image1.iterator().next();
+		U type2 = image2.iterator().next();
 
 		// define some image type specific threshold variables
-		final T thresholdCh1 = type.createVariable();
-		final T thresholdCh2 = type.createVariable();
-		// reset the previously created cursor
-		cursor.reset();
+		final T thresholdCh1 = type1.createVariable();
+		final U thresholdCh2 = type2.createVariable();
 
 		/* Get min and max value of image data type. Since type of image
 		 * one and two are the same, we dont't need to distinguish them.
 		 */
-		final T dummyT = type.createVariable();
-		final double minVal = dummyT.getMinValue();
-		final double maxVal = dummyT.getMaxValue();
+
+		T minVal1 = type1.createVariable();
+		minVal1.setReal(type1.getMinValue());
+		T maxVal1 = type1.createVariable();
+		maxVal1.setReal(type1.getMaxValue());
+		U minVal2 = type2.createVariable();
+		minVal2.setReal(type2.getMinValue());
+		U maxVal2 = type2.createVariable();
+		maxVal2.setReal(type2.getMaxValue());
 
 		// do regression
 		while (!stepper.isFinished()) {
@@ -209,82 +219,44 @@ public class AutothresholdRegressionBisection<T extends RealType<T>, U extends R
 			/* Make sure we don't get overflow the image type specific threshold variables
 			 * if the image data type doesn't support this value.
 			 */
-			thresholdCh1.setReal(clamp(ch1ThreshMax, minVal, maxVal));
-			thresholdCh2.setReal(clamp(ch2ThreshMax, minVal, maxVal));
+			thresholdCh1.set(clamp(ch1ThreshMax, minVal1, maxVal1));
+			thresholdCh2.set(clamp(ch2ThreshMax, minVal2, maxVal2));
 
-			try {
-				// do persons calculation within the limits
-				final double currentPersonsR = pearsonsCorrellation.calculatePearsons(
-					cursor, ch1Mean, ch2Mean, thresholdCh1, thresholdCh2,
-					ThresholdMode.Below);
-				stepper.update(currentPersonsR);
-			}
-			catch (final MissingPreconditionException e) {
-				/* the exception that could occur is due to numerical
-				 * problems within the Pearsons calculation. */
-				stepper.update(Double.NaN);
-			}
-
-			// reset the cursor to reuse it
-			cursor.reset();
+			// do pearsonsFast calculation within the limits
+			final double currentPersonsR = (double) ops().run("pearsonsFast", image1, image2, thresholdCh1, thresholdCh2);  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			//pearsonsCorrellation.calculatePearsons(cursor, ch1Mean, ch2Mean, thresholdCh1, thresholdCh2, ThresholdMode.Below);
+			stepper.update(currentPersonsR);
 		}
 
 		/* Store the new results. The lower thresholds are the types
-		 * min value for now. For the max threshold we do a clipping
+		 * min value for now. For the max threshold we do a clipping  ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 		 * to make it fit into the image type.
 		 */
-		ch1MinThreshold = type.createVariable();
-		ch1MinThreshold.setReal(minVal);
+		results.setCh1MinThreshold(minVal1);
 
-		ch1MaxThreshold = type.createVariable();
-		ch1MaxThreshold.setReal(clamp(ch1ThreshMax, minVal, maxVal));
+		results.setCh1MaxThreshold(clamp(ch1ThreshMax, minVal1, maxVal1));
 
-		ch2MinThreshold = type.createVariable();
-		ch2MinThreshold.setReal(minVal);
+		results.setCh2MinThreshold(minVal2);
 
-		ch2MaxThreshold = type.createVariable();
-		ch2MaxThreshold.setReal(clamp(ch2ThreshMax, minVal, maxVal));
+		results.setCh2MaxThreshold(clamp(ch2ThreshMax, minVal2, maxVal2));
 
-		autoThresholdSlope = m;
-		autoThresholdIntercept = b;
-		bToYMeanRatio = b / container.getMeanCh2();
+		results.setAutoThresholdSlope(m);
+		results.setAutoThresholdIntercept(b);
+		results.setBToYMeanRatio(b / ch2Mean);
 
-		// TODO Auto-generated method stub
-		return null;
+		return results;
 	}
 
 	/**
 	 * Clamp a value to a min or max value. If the value is below min, min is
 	 * returned. Accordingly, max is returned if the value is larger. If it is
 	 * neither, the value itself is returned.
+	 * @param <V>
 	 */
-	public static double clamp(final double val, final double min,
-		final double max)
+	public <V extends RealType<V>> V clamp(double val, V minimum, V maximum)
 	{
-		return min > val ? min : max < val ? max : val;
-	}
-
-	public double getBToYMeanRatio() {
-		return bToYMeanRatio;
-	}
-
-	public double getWarnYInterceptToYMaxRatioThreshold() {
-		return warnYInterceptToYMeanRatioThreshold;
-	}
-
-	public double getAutoThresholdSlope() {
-		return autoThresholdSlope;
-	}
-
-	public double getAutoThresholdIntercept() {
-		return autoThresholdIntercept;
-	}
-
-	public T getCh1MaxThreshold() {
-		return ch1MaxThreshold;
-	}
-
-	public U getCh2MaxThreshold() {
-		return ch2MaxThreshold;
+		V v = minimum.createVariable();
+		v.setReal(val);
+		return minimum.compareTo(v) > 0 ? minimum : maximum.compareTo(v) < 0 ? maximum : v;
 	}
 }
