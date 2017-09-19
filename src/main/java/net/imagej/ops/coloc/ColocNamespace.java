@@ -34,6 +34,7 @@ import net.imagej.ops.AbstractNamespace;
 import net.imagej.ops.Namespace;
 import net.imagej.ops.OpMethod;
 import net.imagej.ops.coloc.pearsons.PearsonsResult;
+import net.imagej.ops.coloc.threshold.AutothresholdRegressionResults;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.real.DoubleType;
 
@@ -154,10 +155,10 @@ public class ColocNamespace extends AbstractNamespace {
 	//-- threshold --
 
 	@OpMethod(op = net.imagej.ops.coloc.threshold.AutothresholdRegression.class)
-	public <T extends RealType<T>, U extends RealType<U>> Double autothresholdRegression(
+	public <T extends RealType<T>, U extends RealType<U>>  AutothresholdRegressionResults<T,U>  threshold(
 		final Iterable<T> image1, final Iterable<U> image2)
 	{
-		final Double result = (Double) ops().run(
+		final AutothresholdRegressionResults<T,U> result =  (AutothresholdRegressionResults<T,U>)  ops().run(
 			net.imagej.ops.coloc.threshold.AutothresholdRegression.class, image1, image2);
 		return result;
 	}
