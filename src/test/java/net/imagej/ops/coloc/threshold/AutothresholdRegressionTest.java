@@ -25,6 +25,7 @@ package net.imagej.ops.coloc.threshold;
 import static org.junit.Assert.assertEquals;
 
 import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Stats.Mean;
 import net.imagej.ops.coloc.ColocalisationTest;
 import net.imagej.ops.coloc.pearsons.PearsonsResult;
 import net.imagej.ops.coloc.pearsonsClassic.PearsonsClassic;
@@ -47,53 +48,44 @@ import net.imagej.ops.coloc.threshold.AutothresholdRegression;
  */
 public class AutothresholdRegressionTest<T, U> extends ColocalisationTest 
 {
-	@Test
-	public void clampHelperTest() {
-		assertEquals(4, AutoThresholdRegression.clamp(5, 1, 4), 0.00001);
-		assertEquals(1, AutoThresholdRegression.clamp(-2, 1, 4), 0.00001);
-		assertEquals(1, AutoThresholdRegression.clamp(5, 1, 1), 0.00001);
-		assertEquals(2, AutoThresholdRegression.clamp(2, -1, 3), 0.00001);
-	}
+//	@SuppressWarnings("unchecked")
+//	@Test
+//	public <V> void clampHelperTest() {
+//		assertEquals(4, AutothresholdRegression.clamp(5, 1, 4), 0.00001);
+//		assertEquals(1, AutothresholdRegression.clamp(-2, 1, 4), 0.00001);
+//		assertEquals(1, AutothresholdRegression.clamp(5, 1, 1), 0.00001);
+//		assertEquals(2, AutothresholdRegression.clamp(2, -1, 3), 0.00001);
+//	}
 
 	/**
 	 * This test makes sure the test images A and B lead to the same thresholds,
-	 * regardless whether they are added in the order A, B or B, A to the data
-	 * container.
+	 * regardless whether they are added in the order A, B or B, A.
 	 */
 	@Test
 	public void cummutativityTest() {
-		AutothresholdRegressionResults<T,U> result = (AutothresholdRegressionResults<T, U>) ops.run(AutothresholdRegression.class, syntheticNegativeCorrelationImageCh1, syntheticNegativeCorrelationImageCh2);
-		
-		
-		PearsonsCorrelation<UnsignedByteType> pc1 =
-				new PearsonsCorrelation<UnsignedByteType>(
-						PearsonsCorrelation.Implementation.Fast);
-		PearsonsCorrelation<UnsignedByteType> pc2 =
-				new PearsonsCorrelation<UnsignedByteType>(
-						PearsonsCorrelation.Implementation.Fast);
 
-		AutoThresholdRegression<UnsignedByteType> atr1 =
-				new AutoThresholdRegression<UnsignedByteType>(pc1, atrImplementation);
-		AutoThresholdRegression<UnsignedByteType> atr2 =
-				new AutoThresholdRegression<UnsignedByteType>(pc2, atrImplementation);
+//		System.out.println(ops.convert().uint8(syntheticNegativeCorrelationImageCh1).iterator().next().getClass().toString());
+//		Mean t = ops.op(Ops.Stats.Mean.class, syntheticNegativeCorrelationImageCh1.iterator().next(), syntheticNegativeCorrelationImageCh1);
+//		AutothresholdRegressionResults<T,U> result = (AutothresholdRegressionResults<T, U>) ops.run(AutothresholdRegression.class, ops.convert().uint8(positiveCorrelationImageCh1), ops.convert().uint8(positiveCorrelationImageCh1));
 
-		RandomAccessibleInterval<UnsignedByteType> img1 = syntheticNegativeCorrelationImageCh1;
-		RandomAccessibleInterval<UnsignedByteType> img2 = syntheticNegativeCorrelationImageCh2;
+		@SuppressWarnings("unchecked")
+		AutothresholdRegressionResults<T,U> result1 = (AutothresholdRegressionResults<T, U>) ops.run(AutothresholdRegression.class, syntheticNegativeCorrelationImageCh1, syntheticNegativeCorrelationImageCh2);
+		@SuppressWarnings("unchecked")
+		AutothresholdRegressionResults<T, U> result2 = (AutothresholdRegressionResults<T, U>) ops.run(AutothresholdRegression.class, syntheticNegativeCorrelationImageCh2, syntheticNegativeCorrelationImageCh1);
 
-		DataContainer<UnsignedByteType> container1 =
-				new DataContainer<UnsignedByteType>(img1, img2, 1, 1,
-						"Channel 1", "Channel 2");
+		System.out.println("OPS result1 ch1MinThreshold = " + result1.getCh1MinThreshold());
+		System.out.println("OPS result2 ch2MinThreshold = " + result2.getCh2MinThreshold());
+		System.out.println("OPS result1 ch1MaxThreshold = " + result1.getCh1MaxThreshold());
+		System.out.println("OPS result2 ch2MaxThreshold = " + result2.getCh2MaxThreshold());
 
-		DataContainer<UnsignedByteType> container2 =
-				new DataContainer<UnsignedByteType>(img2, img1, 1, 1,
-						"Channel 2", "Channel 1");
+		System.out.println("OPS result1 ch1MinThreshold = " + result1.getCh2MinThreshold());
+		System.out.println("OPS result2 ch2MinThreshold = " + result2.getCh1MinThreshold());
+		System.out.println("OPS result1 ch1MaxThreshold = " + result1.getCh2MaxThreshold());
+		System.out.println("OPS result2 ch2MaxThreshold = " + result2.getCh1MaxThreshold());
 
-		atr1.execute(container1);
-		atr2.execute(container2);
-
-		assertEquals(atr1.getCh1MinThreshold(), atr2.getCh2MinThreshold());
-		assertEquals(atr1.getCh1MaxThreshold(), atr2.getCh2MaxThreshold());
-		assertEquals(atr1.getCh2MinThreshold(), atr2.getCh1MinThreshold());
-		assertEquals(atr1.getCh2MaxThreshold(), atr2.getCh1MaxThreshold());
+		assertEquals(result1.getCh1MinThreshold(), result2.getCh2MinThreshold());
+		assertEquals(result1.getCh1MaxThreshold(), result2.getCh2MaxThreshold());
+		assertEquals(result1.getCh2MinThreshold(), result2.getCh1MinThreshold());
+		assertEquals(result1.getCh2MaxThreshold(), result2.getCh1MaxThreshold());
 	}
 }

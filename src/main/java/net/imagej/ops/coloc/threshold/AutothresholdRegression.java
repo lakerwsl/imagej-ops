@@ -26,14 +26,19 @@ import net.imagej.ops.Ops;
 import net.imagej.ops.coloc.BisectionStepper;
 import net.imagej.ops.coloc.ChannelMapper;
 import net.imagej.ops.coloc.Stepper;
+import net.imagej.ops.coloc.pearsons.PearsonsResult;
 import net.imagej.ops.special.function.AbstractBinaryFunctionOp;
 import net.imagej.ops.special.function.Functions;
 import net.imagej.ops.special.function.UnaryFunctionOp;
+import net.imagej.ops.special.hybrid.Hybrids;
+import net.imagej.ops.special.hybrid.UnaryHybridCF;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.IterablePair;
 import net.imglib2.util.Pair;
 
 import org.scijava.plugin.Plugin;
+
+
 
 /**
  * A class implementing the automatic finding of a threshold used for Pearson
@@ -49,21 +54,21 @@ public class AutothresholdRegression<T extends RealType<T>, U extends RealType<U
 	implements Ops.Coloc.Threshold
 {
 
-	private UnaryFunctionOp<Iterable<T>, T> ch1MeanOp;
-	private UnaryFunctionOp<Iterable<U>, U> ch2MeanOp;
+	private UnaryHybridCF<Iterable<T>, T> ch1MeanOp;
+	private UnaryHybridCF<Iterable<U>, U> ch2MeanOp;
 	private UnaryFunctionOp<Iterable<T>, Pair<T, T>> ch1MinMaxOp;
 	private UnaryFunctionOp<Iterable<U>, Pair<U, U>> ch2MinMaxOp;
 
 	@Override
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	public void initialize() {
-		ch1MeanOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.Mean.class,
+		ch1MeanOp = (UnaryHybridCF) Hybrids.unaryCF(ops(), Ops.Stats.Mean.class,
 			in1().iterator().next().getClass(), in1());
-		ch2MeanOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.Mean.class,
+		ch2MeanOp = (UnaryHybridCF) Hybrids.unaryCF(ops(), Ops.Stats.Mean.class,
 			in2().iterator().next().getClass(), in2());
-		ch1MinMaxOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.Mean.class,
+		ch1MinMaxOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.MinMax.class,
 			Pair.class, in1());
-		ch2MinMaxOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.Mean.class,
+		ch2MinMaxOp = (UnaryFunctionOp) Functions.unary(ops(), Ops.Stats.MinMax.class,
 			Pair.class, in2());
 	}
 
@@ -74,14 +79,16 @@ public class AutothresholdRegression<T extends RealType<T>, U extends RealType<U
 		AutothresholdRegressionResults<T,U> results =
 			new AutothresholdRegressionResults<T,U>();
 		final Iterable<Pair<T, U>> samples = new IterablePair<>(image1, image2);
+
 		final double ch1Mean = ch1MeanOp.calculate(image1).getRealDouble();
 		final double ch2Mean = ch2MeanOp.calculate(image2).getRealDouble();
-		final Pair<T, T> ch1minMax = ch1MinMaxOp.calculate(image1);
-		double ch1Min = ch1minMax.getA().getRealDouble();
-		double ch1Max = ch1minMax.getB().getRealDouble();
-		final Pair<U, U> ch2minMax = ch2MinMaxOp.calculate(image2);
-		double ch2Min = ch2minMax.getA().getRealDouble();
-		double ch2Max = ch2minMax.getB().getRealDouble();
+
+		final Pair<T, T> ch1minMaxT = ch1MinMaxOp.calculate(image1);
+		final double ch1Min = ch1minMaxT.getA().getRealDouble();
+		final double ch1Max = ch1minMaxT.getB().getRealDouble();
+		final Pair<U, U> ch2minMaxU = ch2MinMaxOp.calculate(image2);
+		double ch2Min = ch2minMaxU.getA().getRealDouble();
+		double ch2Max = ch2minMaxU.getB().getRealDouble();
 
 		final double combinedMean = ch1Mean + ch2Mean;
 
@@ -223,9 +230,9 @@ public class AutothresholdRegression<T extends RealType<T>, U extends RealType<U
 			thresholdCh2.set(clamp(ch2ThreshMax, minVal2, maxVal2));
 
 			// do pearsonsFast calculation within the limits
-			final double currentPersonsR = (double) ops().run("pearsonsFast", image1, image2, thresholdCh1, thresholdCh2);  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
+			final PearsonsResult currentPersonsR = (PearsonsResult) ops().run("pearsons", image1, image2, thresholdCh1, thresholdCh2);  ////////////////////////////////////////////////////////////////////////////////////////////////////////////
 			//pearsonsCorrellation.calculatePearsons(cursor, ch1Mean, ch2Mean, thresholdCh1, thresholdCh2, ThresholdMode.Below);
-			stepper.update(currentPersonsR);
+			stepper.update(currentPersonsR.correlationValue);
 		}
 
 		/* Store the new results. The lower thresholds are the types
