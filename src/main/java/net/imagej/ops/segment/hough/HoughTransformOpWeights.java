@@ -1,4 +1,4 @@
-package net.imagej.ops.hough;
+package net.imagej.ops.segment.hough;
 
 import org.scijava.ItemIO;
 import org.scijava.app.StatusService;

@@ -1,4 +1,4 @@
-package net.imagej.ops.hough;
+package net.imagej.ops.segment.hough;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -10,36 +10,28 @@ import org.scijava.thread.ThreadService;
 
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import net.imglib2.Point;
+import net.imglib2.RandomAccess;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.RealPoint;
-import net.imglib2.algorithm.dog.DogDetection;
-import net.imglib2.algorithm.localextrema.RefinedPeak;
+import net.imglib2.algorithm.localextrema.LocalExtrema;
+import net.imglib2.algorithm.localextrema.LocalExtrema.MaximumCheck;
 import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
-import net.imglib2.view.Views;
 
 @Plugin( type = HoughCircleDetectorOp.class )
-public class HoughCircleDetectorDogOp< T extends RealType< T > & NativeType< T > >
+public class HoughCircleDetectorLocalExtremaOp< T extends RealType< T > & NativeType< T > >
 		extends AbstractUnaryFunctionOp< RandomAccessibleInterval< T >, List< HoughCircle > >
 {
 
-	private static final double K = 1.6;
-
 	@Parameter
 	private ThreadService threadService;
-
-	@Parameter( required = true, min = "1" )
-	private double circleThickness;
 
 	@Parameter( required = true, min = "1" )
 	private double minRadius;
 
 	@Parameter( required = true, min = "1" )
 	private double stepRadius;
-
-	@Parameter
-	private double sigma;
 
 	@Parameter( required = false, min = "0.1" )
 	private double sensitivity = 20.;
@@ -50,26 +42,19 @@ public class HoughCircleDetectorDogOp< T extends RealType< T > & NativeType< T >
 		final int numDimensions = input.numDimensions();
 		final ExecutorService es = threadService.getExecutorService();
 
-		final double threshold = 2. * Math.PI * minRadius * circleThickness / sensitivity;
-		final double[] calibration = Util.getArrayFromValue( 1., numDimensions );
-		final DogDetection< T > dog = new DogDetection< T >(
-				Views.extendZero( input ),
-				input,
-				calibration,
-				sigma / K,
-				sigma,
-				DogDetection.ExtremaType.MINIMA,
-				threshold,
-				false );
-		dog.setExecutorService( es );
-		final ArrayList< RefinedPeak< Point > > refined = dog.getSubpixelPeaks();
+		final double threshold = 2. * Math.PI * minRadius / sensitivity;
+		final T t = Util.getTypeFromInterval( input );
+		t.setReal( threshold );
+		final MaximumCheck< T > check = new LocalExtrema.MaximumCheck< T >( t );
+		final ArrayList< Point > extrema = LocalExtrema.findLocalExtrema( input, check, es );
 
 		/*
 		 * Create circles.
 		 */
 
-		final ArrayList< HoughCircle > circles = new ArrayList<>( refined.size() );
-		for ( final RefinedPeak< Point > peak : refined )
+		final ArrayList< HoughCircle > circles = new ArrayList<>( extrema.size() );
+		final RandomAccess< T > ra = input.randomAccess( input );
+		for ( final Point peak : extrema )
 		{
 			// Minima are negative.
 			final RealPoint center = new RealPoint( numDimensions - 1 );
@@ -77,7 +62,8 @@ public class HoughCircleDetectorDogOp< T extends RealType< T > & NativeType< T >
 				center.setPosition( peak.getDoublePosition( d ), d );
 
 			final double radius = minRadius + ( peak.getDoublePosition( numDimensions - 1 ) ) * stepRadius;
-			final double ls = -2. * Math.PI * minRadius * circleThickness / peak.getValue();
+			ra.setPosition( peak );
+			final double ls = -2. * Math.PI * minRadius / ra.get().getRealDouble();
 			circles.add( new HoughCircle( center, radius, ls ) );
 		}
 
