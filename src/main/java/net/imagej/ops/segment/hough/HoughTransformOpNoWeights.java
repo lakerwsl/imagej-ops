@@ -5,6 +5,7 @@ import org.scijava.app.StatusService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
+import net.imagej.ops.Contingent;
 import net.imagej.ops.special.hybrid.AbstractUnaryHybridCF;
 import net.imglib2.Cursor;
 import net.imglib2.Dimensions;
@@ -20,6 +21,7 @@ import net.imglib2.view.Views;
 @Plugin( type = HoughCircleTransformOp.class )
 public class HoughTransformOpNoWeights< T extends BooleanType< T > >
 		extends AbstractUnaryHybridCF< IterableInterval< T >, Img< DoubleType > >
+		implements Contingent
 {
 
 	@Parameter
@@ -95,5 +97,11 @@ public class HoughTransformOpNoWeights< T extends BooleanType< T > >
 
 			statusService.showProgress( ++progress, ( int ) sum );
 		}
+	}
+
+	@Override
+	public boolean conforms()
+	{
+		return in().numDimensions() == 2;
 	}
 }
