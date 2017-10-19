@@ -1,7 +1,6 @@
 package net.imagej.ops.segment.hough;
 
 import org.scijava.ItemIO;
-import org.scijava.app.StatusService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 
@@ -21,9 +20,6 @@ public class HoughTransformOpWeights< T extends BooleanType< T >, R extends Real
 		extends HoughTransformOpNoWeights< T >
 {
 
-	@Parameter
-	private StatusService statusService;
-	
 	@Parameter( label = "Weights", description = "Weight image for the vote image.", type = ItemIO.INPUT )
 	private RandomAccessible< R > weights;
 

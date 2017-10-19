@@ -1,6 +1,7 @@
 package net.imagej.ops.segment.hough;
 
 import org.scijava.ItemIO;
+import org.scijava.Priority;
 import org.scijava.app.StatusService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
@@ -18,14 +19,14 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
-@Plugin( type = HoughCircleTransformOp.class )
+@Plugin( type = HoughCircleTransformOp.class, priority = Priority.HIGH )
 public class HoughTransformOpNoWeights< T extends BooleanType< T > >
 		extends AbstractUnaryHybridCF< IterableInterval< T >, Img< DoubleType > >
 		implements Contingent
 {
 
 	@Parameter
-	private StatusService statusService;
+	protected StatusService statusService;
 
 	@Parameter( label = "Min circle radius", description = "Minimal radius, in pixel units, for the transform.", min = "1", type = ItemIO.INPUT )
 	protected long minRadius = 1;
