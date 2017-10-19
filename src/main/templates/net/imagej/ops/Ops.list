@@ -84,6 +84,7 @@ namespaces = ```
 	[name: "filter", iface: "Filter", ops: [
 		[name: "addNoise",                       iface: "AddNoise"],
 		[name: "addPoissonNoise",                iface: "AddPoissonNoise"],
+		[name: "bilateral",                      iface: "Bilateral"],
 		[name: "convolve",                       iface: "Convolve"],
 		[name: "correlate",                      iface: "Correlate"],
 		[name: "createFFTOutput",                iface: "CreateFFTOutput"],
@@ -308,6 +309,7 @@ namespaces = ```
 		[name: "fillHoles",                      iface: "FillHoles"],
 		[name: "floodFill",                      iface: "FloodFill"],
 		[name: "open",                           iface: "Open"],
+		[name: "outline",                        iface: "Outline"],
 		[name: "thin",                           iface: "Thin"],
 		[name: "topHat",                         iface: "TopHat"],
 	]],
@@ -376,6 +378,7 @@ namespaces = ```
 		[name: "rosin",                          iface: "Rosin"],
 	]],
 	[name: "topology", iface: "Topology", ops: [
+		[name: "boxCount",                       iface: "BoxCount"],
 		[name: "eulerCharacteristic26N",         iface: "EulerCharacteristic26N"],
 		[name: "eulerCharacteristic26NFloating", iface: "EulerCharacteristic26NFloating"],
 		[name: "eulerCorrection",                iface: "EulerCorrection"],
@@ -411,6 +414,7 @@ namespaces = ```
 		[name: "scaleView",                      iface: "ScaleView",                      aliases: ["resizeView"]],
 		[name: "shearView",                      iface: "ShearView"],
 		[name: "stackView",                      iface: "StackView"],
+		[name: "concatenateView",                iface: "ConcatenateView"],
 		[name: "subsampleView",                  iface: "SubsampleView"],
 		[name: "translateView",                  iface: "TranslateView"],
 		[name: "unshearView",                    iface: "UnshearView"],
