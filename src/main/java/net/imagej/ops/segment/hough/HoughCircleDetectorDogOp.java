@@ -1,6 +1,7 @@
 package net.imagej.ops.segment.hough;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
@@ -81,6 +82,7 @@ public class HoughCircleDetectorDogOp< T extends RealType< T > & NativeType< T >
 			circles.add( new HoughCircle( center, radius, ls ) );
 		}
 
+		Collections.sort( circles );
 		return circles;
 	}
 }
