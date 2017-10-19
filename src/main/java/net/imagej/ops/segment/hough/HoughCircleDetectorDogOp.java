@@ -20,6 +20,18 @@ import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
 import net.imglib2.view.Views;
 
+/**
+ * A Hough circle detector based on running sub-pixel DoG detection in the vote
+ * image.
+ * <p>
+ * This detector offers typically a more robust and accurate detection than its
+ * local maxima counterpart, at the cost of longer processing time.
+ * 
+ * @author Jean-Yves Tinevez
+ *
+ * @param <T>
+ *            the type of the source vote image.
+ */
 @Plugin( type = HoughCircleDetectorOp.class )
 public class HoughCircleDetectorDogOp< T extends RealType< T > & NativeType< T > >
 		extends AbstractUnaryFunctionOp< RandomAccessibleInterval< T >, List< HoughCircle > >

@@ -4,6 +4,17 @@ import net.imglib2.RealLocalizable;
 import net.imglib2.RealPoint;
 import net.imglib2.roi.util.Contains;
 
+/**
+ * Representation of a circle segmented via Hough circle transformation.
+ * <p>
+ * Instances are {@link RealLocalizable} and have a radius (in pixel units) and
+ * a sensitivity. The sensitivity factor is used to report a quality of the
+ * Hough circle detection, the smallest the better the circle. The sensitivity
+ * can be used to sort a list of circles.
+ * 
+ * @author Jean-Yves Tinevez.
+ *
+ */
 public class HoughCircle extends RealPoint implements Comparable< HoughCircle >, Contains< RealLocalizable >
 {
 

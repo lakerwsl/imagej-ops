@@ -25,6 +25,18 @@ import net.imglib2.type.NativeType;
 import net.imglib2.type.numeric.RealType;
 import net.imglib2.util.Util;
 
+/**
+ * A Hough circle detector based on finding local extrema in the vote image,
+ * followed by non-maxima suppression.
+ * <p>
+ * This detector offers typically a faster processing than its DoG-based
+ * counterpart, at the cost of accuracy and robustness.
+ * 
+ * @author Jean-Yves Tinevez
+ *
+ * @param <T>
+ *            the type of the source vote image.
+ */
 @Plugin( type = HoughCircleDetectorOp.class )
 public class HoughCircleDetectorLocalExtremaOp< T extends RealType< T > & NativeType< T > >
 		extends AbstractUnaryFunctionOp< RandomAccessibleInterval< T >, List< HoughCircle > >

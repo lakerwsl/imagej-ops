@@ -15,6 +15,14 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
+/**
+ * Hough transform for binary images, with weigths for each pixel.
+ * 
+ * @author Jean-Yves Tinevez
+ *
+ * @param <T>
+ *            the type of source image. Must extend boolean type.
+ */
 @Plugin( type = HoughCircleTransformOp.class )
 public class HoughTransformOpWeights< T extends BooleanType< T >, R extends RealType< R > >
 		extends HoughTransformOpNoWeights< T >

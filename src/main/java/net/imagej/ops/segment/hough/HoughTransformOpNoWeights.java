@@ -19,6 +19,14 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.IntervalView;
 import net.imglib2.view.Views;
 
+/**
+ * Hough transform for binary images.
+ * 
+ * @author Jean-Yves Tinevez
+ *
+ * @param <T>
+ *            the type of source image. Must extend boolean type.
+ */
 @Plugin( type = HoughCircleTransformOp.class, priority = Priority.HIGH )
 public class HoughTransformOpNoWeights< T extends BooleanType< T > >
 		extends AbstractUnaryHybridCF< IterableInterval< T >, Img< DoubleType > >
