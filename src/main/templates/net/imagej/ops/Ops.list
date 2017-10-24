@@ -30,6 +30,7 @@ namespaces = ```
 		[name: "manders",                     iface: "Manders"],
 		[name: "pearsons",                    iface: "Pearsons"],
 		[name: "pearsonsClassic",             iface: "PearsonsClassic"],
+		[name: "pValue",                      iface: "PValue"],
 		[name: "threshold",     	      iface: "Threshold"],
 		[name: "spearman",                    iface: "Spearman"],
 	]],
