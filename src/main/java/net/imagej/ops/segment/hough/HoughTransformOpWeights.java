@@ -38,8 +38,10 @@ public class HoughTransformOpWeights< T extends BooleanType< T >, R extends Real
 		if ( input.numDimensions() != 2 ) { throw new IllegalArgumentException(
 				"Cannot compute Hough circle transform for non-2D images. Got " + numDimensions + "D image." ); }
 
-		maxRadius = Math.max( minRadius, maxRadius );
-		minRadius = Math.min( minRadius, maxRadius );
+		final long maxR = Math.max( minRadius, maxRadius );
+		final long minR = Math.min( minRadius, maxRadius );
+		maxRadius = maxR;
+		minRadius = minR;
 		final long nRadiuses = ( maxRadius - minRadius ) / stepRadius + 1;
 
 		/*
