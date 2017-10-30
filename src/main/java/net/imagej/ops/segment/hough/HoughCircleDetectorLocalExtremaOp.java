@@ -31,6 +31,21 @@ import net.imglib2.util.Util;
  * <p>
  * This detector offers typically a faster processing than its DoG-based
  * counterpart, at the cost of accuracy and robustness.
+ * <p>
+ * It involves non-maxima suppression. The local extrema-based detector directly
+ * looks for local maxima in the vote image. The vote image might be 'noisy':
+ * several local maxima might correspond to the same true circle but be
+ * separated by a couple of pixels. This will results in having two or more
+ * circles detected very close to each other with a very similar radius.
+ * 
+ * Non-maxima suppression is an ad-hoc workaround for these artifacts. You order
+ * all the circles by some quality factor (we use the sensitivity) and if two
+ * circles are found too close (in my case, one inside one another) you just
+ * keep the one with the best quality (lower sensitivity).
+ * 
+ * This is not always desirable if you know that some smaller circles are
+ * supposed to be inside larger one. In that case you have to use the other
+ * detector.
  * 
  * @author Jean-Yves Tinevez
  *
@@ -52,6 +67,16 @@ public class HoughCircleDetectorLocalExtremaOp< T extends RealType< T > & Native
 	@Parameter( required = true, min = "1" )
 	private double stepRadius;
 
+	/**
+	 * Hough circle detection is a detection algorithm. Many of them returns a
+	 * quality measure for what they detect (spot, circle, line,...) that
+	 * reports how likely it is that it is not a spurious detection. The greater
+	 * the quality, the more likely that it is a real one.
+	 * <p>
+	 * The sensitivity used here which varies as the inverse of this quality.
+	 * The sensitivity of a circle appears as the minimal value the sensitivity
+	 * settings must be set to incorporate it in the results.
+	 */
 	@Parameter( required = false, min = "0.1" )
 	private double sensitivity = 20.;
 

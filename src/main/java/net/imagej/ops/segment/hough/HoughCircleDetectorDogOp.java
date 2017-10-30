@@ -54,6 +54,16 @@ public class HoughCircleDetectorDogOp< T extends RealType< T > & NativeType< T >
 	@Parameter
 	private double sigma;
 
+	/**
+	 * Hough circle detection is a detection algorithm. Many of them returns a
+	 * quality measure for what they detect (spot, circle, line,...) that
+	 * reports how likely it is that it is not a spurious detection. The greater
+	 * the quality, the more likely that it is a real one.
+	 * <p>
+	 * The sensitivity used here which varies as the inverse of this quality.
+	 * The sensitivity of a circle appears as the minimal value the sensitivity
+	 * settings must be set to incorporate it in the results.
+	 */
 	@Parameter( required = false, min = "0.1" )
 	private double sensitivity = 20.;
 
