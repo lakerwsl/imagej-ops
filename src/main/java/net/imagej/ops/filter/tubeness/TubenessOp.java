@@ -1,18 +1,22 @@
 package net.imagej.ops.filter.tubeness;
 
 import java.util.Iterator;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 
+import org.scijava.Cancelable;
 import org.scijava.app.StatusService;
 import org.scijava.plugin.Parameter;
 import org.scijava.plugin.Plugin;
 import org.scijava.thread.ThreadService;
 
 import net.imagej.ops.special.computer.AbstractUnaryComputerOp;
-import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
+import net.imagej.ops.special.hybrid.AbstractUnaryHybridCF;
 import net.imglib2.Dimensions;
 import net.imglib2.FinalDimensions;
 import net.imglib2.RandomAccessibleInterval;
+import net.imglib2.algorithm.gradient.HessianMatrix;
+import net.imglib2.algorithm.linalg.eigen.TensorEigenValues;
 import net.imglib2.exception.IncompatibleTypeException;
 import net.imglib2.img.Img;
 import net.imglib2.img.ImgFactory;
@@ -22,7 +26,7 @@ import net.imglib2.type.numeric.real.DoubleType;
 import net.imglib2.view.Views;
 
 /**
- * The Tubeness filter as an Op.
+ * The Tubeness filter: enhance filamentous structures of a specified thickness.
  * <p>
  * This filter works on 2D and 3D image exclusively and produces a score for how
  * "tube-like" each point in the image is. This is useful as a preprocessing
@@ -33,24 +37,40 @@ import net.imglib2.view.Views;
  * negative then value is √(λ₂λ₃), otherwise the value is 0. For 2D images, if
  * the large eigenvalue is negative, we return its absolute value and otherwise
  * return 0.
+ * <ul>
+ * <li>Source image is filtered first by a gaussian with 𝜎 that sets its scale.
+ * <li>The the Hessian matrix is calculated for each pixel.
+ * <li>We yield the eigenvalues of the Hessian matrix. The output of the
+ * tubeness filter is a combination of these eigenvalues:
+ * <ul>
+ * <li>in 2D where <code>λ₂</code> is the largest eigenvalue:
+ * <code>out = 𝜎 × 𝜎 × |λ₂|</code> if <code>λ₂</code> is negative, 0
+ * otherwise.
+ * <li>in 3D where <code>λ₂</code> and <code>λ₃</code> are the largest
+ * eigenvalues:, <code>out = 𝜎 × 𝜎 × sqrt( λ₂ * λ₃ )</code> if <code>λ₂</code>
+ * and <code>λ₃</code> are negative, 0 otherwise.
+ * </ul>
+ * </ul>
+ * This results in enhancing filaments of roughly <code>𝜎 / sqrt(d)</code>
+ * thickness.
  * <p>
- * The initial version of this filter was written by Mark Longair, Stephan
- * Preibisch and Johannes Schindelin, and was part of the VIB package. This
- * class is a full rewrite from scratch, using the ops framework.
+ * Port of the tubeness filter of the VIB package, with original authors Mark
+ * Longair and Stephan Preibisch, to ImageJ-ops.
+ * 
+ * @see <a href=
+ *      "https://github.com/fiji/VIB/blob/master/src/main/java/features/Tubeness_.java">Tubeness
+ *      VIB plugin code</a>
+ * 
  * 
  * @author Jean-Yves Tinevez
  *
  * @param <T>
- *            the type of the source image, must be real scalar.
- * @see <a href="https://www.longair.net/edinburgh/imagej/tubeness/">Tubeness
- *      VIB page.</a>
- * @see <a href=
- *      "https://github.com/fiji/VIB/blob/master/src/main/java/features/Tubeness_.java">Tubeness
- *      VIB source code.</a>
+ *            the type of the source pixels. Must extends {@link RealType}.
  */
 @Plugin( type = TubenessOp.class )
 public class TubenessOp< T extends RealType< T > >
-		extends AbstractUnaryFunctionOp< RandomAccessibleInterval< T >, Img< DoubleType > >
+		extends AbstractUnaryHybridCF< RandomAccessibleInterval< T >, Img< DoubleType > >
+		implements Cancelable
 {
 
 	@Parameter
@@ -60,20 +80,28 @@ public class TubenessOp< T extends RealType< T > >
 	private StatusService statusService;
 
 	/**
-	 * Desired scale in sigma in physical units.
+	 * Desired scale in physical units. See {@link #calibration}.
 	 */
 	@Parameter
 	private double sigma;
 
 	/**
-	 * Pixel sizes in all dimension.
+	 * Pixel sizes in all dimensions.
 	 */
 	@Parameter
 	private double[] calibration;
 
 	@Override
-	public Img< DoubleType > calculate( final RandomAccessibleInterval< T > input )
+	public Img< DoubleType > createOutput( final RandomAccessibleInterval< T > input )
 	{
+		final Img< DoubleType > tubeness = ops().create().img( input, new DoubleType() );
+		return tubeness;
+	}
+
+	@Override
+	public void compute( final RandomAccessibleInterval< T > input, final Img< DoubleType > tubeness )
+	{
+		cancelReason = null;
 		
 		final int numDimensions = input.numDimensions();
 		// Sigmas in pixel units.
@@ -86,12 +114,21 @@ public class TubenessOp< T extends RealType< T > >
 		 */
 
 		// Get a suitable image factory.
-		final long[] dims = new long[ numDimensions + 1 ];
+		final long[] gradientDims = new long[ numDimensions + 1 ];
+		final long[] hessianDims = new long[ numDimensions + 1 ];
 		for ( int d = 0; d < numDimensions; d++ )
-			dims[ d ] = input.dimension( d );
-		dims[ numDimensions ] = numDimensions * ( numDimensions + 1 ) / 2;
-		final Dimensions dimensions = FinalDimensions.wrap( dims );
-		final ImgFactory< DoubleType > factory = ops().create().imgFactory( dimensions );
+		{
+			hessianDims[ d ] = input.dimension( d );
+			gradientDims[ d ] = input.dimension( d );
+		}
+		hessianDims[ numDimensions ] = numDimensions * ( numDimensions + 1 ) / 2;
+		gradientDims[ numDimensions ] = numDimensions;
+		final Dimensions hessianDimensions = FinalDimensions.wrap( hessianDims );
+		final FinalDimensions gradientDimensions = FinalDimensions.wrap( gradientDims );
+		final ImgFactory< DoubleType > factory = ops().create().imgFactory( hessianDimensions );
+		final Img< DoubleType > hessian = factory.create( hessianDimensions, new DoubleType() );
+		final Img< DoubleType > gradient = factory.create( gradientDimensions, new DoubleType() );
+		final Img< DoubleType > gaussian = factory.create( input, new DoubleType() );
 		
 		// Handle multithreading.
 		final int nThreads = Runtime.getRuntime().availableProcessors();
@@ -100,26 +137,28 @@ public class TubenessOp< T extends RealType< T > >
 		try
 		{
 			// Hessian calculation.
-			final Img< DoubleType > hessian = HessianMatrix.calculateMatrix(
+			HessianMatrix.calculateMatrix(
 					Views.extendBorder( input ),
-					input, 
-					sigmas, 
-					new OutOfBoundsBorderFactory<>(), 
-					factory, new DoubleType(), 
-					nThreads, es );
+					gaussian,
+					gradient,
+					hessian,
+					new OutOfBoundsBorderFactory<>(),
+					nThreads, es, sigma );
 
 			statusService.showProgress( 1, 3 );
+			if ( isCanceled() )
+				return;
 
 			// Hessian eigenvalues.
-			final Img< DoubleType > evs = TensorEigenValues.calculateEigenValuesSymmetric(
+			final RandomAccessibleInterval< DoubleType > evs = TensorEigenValues.calculateEigenValuesSymmetric(
 					hessian,
-					factory, new DoubleType(),
+					TensorEigenValues.createAppropriateResultImg( hessian, factory, new DoubleType() ),
 					nThreads, es );
 
 			statusService.showProgress( 2, 3 );
+			if ( isCanceled() )
+				return;
 
-			// Tubeness is derived from largest eigenvalues.
-			final Img< DoubleType > tubeness = ops().create().img( input, new DoubleType() );
 			final AbstractUnaryComputerOp< Iterable< DoubleType >, DoubleType > method;
 			switch ( numDimensions )
 			{
@@ -130,25 +169,25 @@ public class TubenessOp< T extends RealType< T > >
 				method = new Tubeness3D( sigma );
 			default:
 				System.err.println( "Cannot compute tubeness for " + numDimensions + "D images." );
-				return null;
+				return;
 			}
 			ops().transform().project( tubeness, evs, method, numDimensions );
 
 			statusService.showProgress( 3, 3 );
 
-			return tubeness;
+			return;
 		}
-		catch ( final IncompatibleTypeException e )
+		catch ( final IncompatibleTypeException | InterruptedException | ExecutionException e )
 		{
 			e.printStackTrace();
-			return null;
+			return;
 		}
 	}
 
 	private static final class Tubeness2D extends AbstractUnaryComputerOp< Iterable< DoubleType >, DoubleType >
 	{
 
-		private final double sigma;
+		private double sigma;
 
 		public Tubeness2D( final double sigma )
 		{
@@ -173,7 +212,7 @@ public class TubenessOp< T extends RealType< T > >
 	private static final class Tubeness3D extends AbstractUnaryComputerOp< Iterable< DoubleType >, DoubleType >
 	{
 
-		private final double sigma;
+		private double sigma;
 
 		public Tubeness3D( final double sigma )
 		{
@@ -183,7 +222,7 @@ public class TubenessOp< T extends RealType< T > >
 		@Override
 		public void compute( final Iterable< DoubleType > input, final DoubleType output )
 		{
-			// Use geometric mean of the two largest ones.
+			// Use the two largest ones.
 			final Iterator< DoubleType > it = input.iterator();
 			it.next();
 			final double val1 = it.next().get();
@@ -196,5 +235,28 @@ public class TubenessOp< T extends RealType< T > >
 		}
 	}
 
+	// -- Cancelable methods --
+
+	/** Reason for cancelation, or null if not canceled. */
+	private String cancelReason;
+
+	@Override
+	public boolean isCanceled()
+	{
+		return cancelReason != null;
+	}
+
+	/** Cancels the command execution, with the given reason for doing so. */
+	@Override
+	public void cancel( final String reason )
+	{
+		cancelReason = reason == null ? "" : reason;
+	}
+
+	@Override
+	public String getCancelReason()
+	{
+		return cancelReason;
+	}
 
 }
