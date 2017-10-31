@@ -42,11 +42,17 @@ import java.util.Random;
 
 import net.imglib2.Cursor;
 import net.imglib2.FinalInterval;
+import net.imglib2.IterableInterval;
+import net.imglib2.RandomAccess;
+import net.imglib2.RandomAccessible;
 import net.imglib2.img.Img;
 import net.imglib2.img.array.ArrayImg;
 import net.imglib2.img.array.ArrayImgs;
 import net.imglib2.img.basictypeaccess.array.ByteArray;
 import net.imglib2.img.basictypeaccess.array.FloatArray;
+import net.imglib2.img.cell.CellImg;
+import net.imglib2.img.cell.CellImgFactory;
+import net.imglib2.type.numeric.RealType;
 import net.imglib2.type.numeric.integer.ByteType;
 import net.imglib2.type.numeric.integer.UnsignedByteType;
 import net.imglib2.type.numeric.real.FloatType;
@@ -64,7 +70,7 @@ import org.scijava.plugin.Parameter;
  * <i>All</i> {@link Op} unit tests need to have an {@link OpService} instance.
  * Following the DRY principle, we should implement it only once. Here.
  * </p>
- * 
+ *
  * @author Johannes Schindelin
  * @author Curtis Rueden
  */
@@ -110,11 +116,11 @@ public abstract class AbstractOpTest {
 		return seed = 3170425 * seed + 132102;
 	}
 
-	public ArrayImg<ByteType, ByteArray> generateByteArrayTestImg(final boolean fill,
-		final long... dims)
+	public ArrayImg<ByteType, ByteArray> generateByteArrayTestImg(
+		final boolean fill, final long... dims)
 	{
-		final byte[] array =
-			new byte[(int) Intervals.numElements(new FinalInterval(dims))];
+		final byte[] array = new byte[(int) Intervals.numElements(new FinalInterval(
+			dims))];
 
 		if (fill) {
 			seed = 17;
@@ -126,11 +132,11 @@ public abstract class AbstractOpTest {
 		return ArrayImgs.bytes(array, dims);
 	}
 
-	public ArrayImg<UnsignedByteType, ByteArray> generateUnsignedByteArrayTestImg(final boolean fill,
-		final long... dims)
+	public ArrayImg<UnsignedByteType, ByteArray> generateUnsignedByteArrayTestImg(
+		final boolean fill, final long... dims)
 	{
-		final byte[] array =
-			new byte[(int) Intervals.numElements(new FinalInterval(dims))];
+		final byte[] array = new byte[(int) Intervals.numElements(new FinalInterval(
+			dims))];
 
 		if (fill) {
 			seed = 17;
@@ -142,11 +148,57 @@ public abstract class AbstractOpTest {
 		return ArrayImgs.unsignedBytes(array, dims);
 	}
 
+	public CellImg<ByteType, ?> generateByteTestCellImg(final boolean fill,
+		final long... dims)
+	{
+		final CellImg<ByteType, ?> img = new CellImgFactory<ByteType>().create(dims,
+			new ByteType());
+
+		if (fill) {
+			final Cursor<ByteType> c = img.cursor();
+			while (c.hasNext())
+				c.next().set((byte) pseudoRandom());
+		}
+
+		return img;
+	}
+
+	public CellImg<ByteType, ?> generateByteTestCellImg(final boolean fill,
+		final int[] cellDims, final long... dims)
+	{
+		final CellImg<ByteType, ?> img = new CellImgFactory<ByteType>(cellDims)
+			.create(dims, new ByteType());
+
+		if (fill) {
+			final Cursor<ByteType> c = img.cursor();
+			while (c.hasNext())
+				c.next().set((byte) pseudoRandom());
+		}
+
+		return img;
+	}
+
+	public Img<UnsignedByteType>
+		generateRandomlyFilledUnsignedByteTestImgWithSeed(final long[] dims,
+			final long tempSeed)
+	{
+
+		final Img<UnsignedByteType> img = ArrayImgs.unsignedBytes(dims);
+
+		final Random rand = new Random(tempSeed);
+		final Cursor<UnsignedByteType> cursor = img.cursor();
+		while (cursor.hasNext()) {
+			cursor.next().set(rand.nextInt((int) img.firstElement().getMaxValue()));
+		}
+
+		return img;
+	}
+
 	public ArrayImg<FloatType, FloatArray> generateFloatArrayTestImg(
 		final boolean fill, final long... dims)
 	{
-		final float[] array =
-			new float[(int) Intervals.numElements(new FinalInterval(dims))];
+		final float[] array = new float[(int) Intervals.numElements(
+			new FinalInterval(dims))];
 
 		if (fill) {
 			seed = 17;
@@ -156,22 +208,6 @@ public abstract class AbstractOpTest {
 		}
 
 		return ArrayImgs.floats(array, dims);
-	}
-
-	public Img<UnsignedByteType>
-		generateRandomlyFilledUnsignedByteTestImgWithSeed(final long[] dims,
-			long tempSeed)
-	{
-
-		Img<UnsignedByteType> img = ArrayImgs.unsignedBytes(dims);
-
-		Random rand = new Random(tempSeed);
-		final Cursor<UnsignedByteType> cursor = img.cursor();
-		while (cursor.hasNext()) {
-			cursor.next().set(rand.nextInt((int) img.firstElement().getMaxValue()));
-		}
-
-		return img;
 	}
 
 	public Img<FloatType> openFloatImg(final String resourcePath) {
@@ -185,12 +221,13 @@ public abstract class AbstractOpTest {
 		return IO.openFloatImgs(url.getPath()).get(0).getImg();
 	}
 
-	public static Img<UnsignedByteType> openUnsignedByteType(final Class<?> c, 
-			final String resourcePath) {
+	public static Img<UnsignedByteType> openUnsignedByteType(final Class<?> c,
+		final String resourcePath)
+	{
 		final URL url = c.getResource(resourcePath);
 		return IO.openUnsignedByteImgs(url.getPath()).get(0).getImg();
 	}
-	
+
 	public <T> void assertIterationsEqual(final Iterable<T> expected,
 		final Iterable<T> actual)
 	{
@@ -201,6 +238,18 @@ public abstract class AbstractOpTest {
 			assertEquals(e.next(), a.next());
 		}
 		assertFalse("More elements than expected", a.hasNext());
+	}
+
+	public <T extends RealType<T>> boolean areCongruent(final IterableInterval<T> in, final RandomAccessible<T> out, final double epsilon){
+		Cursor<T> cin = in.localizingCursor();
+		RandomAccess<T> raOut = out.randomAccess();
+		
+		while(cin.hasNext()){
+			cin.fwd();
+			raOut.setPosition(cin);
+			if(Math.abs(cin.get().getRealDouble() - raOut.get().getRealDouble()) > epsilon) return false;
+		}
+		return true;
 	}
 
 	public static class NoOp extends AbstractOp {

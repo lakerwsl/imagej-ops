@@ -32,12 +32,12 @@ package net.imagej.ops.transform.stackView;
 
 import java.util.List;
 
+import org.scijava.plugin.Plugin;
+
 import net.imagej.ops.Ops;
 import net.imagej.ops.special.function.AbstractUnaryFunctionOp;
 import net.imglib2.RandomAccessibleInterval;
 import net.imglib2.view.Views;
-
-import org.scijava.plugin.Plugin;
 
 /**
  * Wraps the {@link Views#stack(List)} method.
@@ -50,7 +50,7 @@ public class DefaultStackView<T>
 		implements Ops.Transform.StackView {
 
 	@Override
-	public RandomAccessibleInterval<T> calculate(List<RandomAccessibleInterval<T>> input) {
+	public RandomAccessibleInterval<T> calculate(final List<RandomAccessibleInterval<T>> input) {
 		return Views.stack(input);
 	}
 
