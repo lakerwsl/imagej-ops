@@ -1,7 +1,8 @@
 
-package net.imagej.ops.coloc.pearsonsClassic;
+package net.imagej.ops.coloc.pearsons;
 
 import net.imagej.ops.Ops;
+import net.imagej.ops.Ops.Coloc.Pearsons;
 import net.imagej.ops.coloc.Accumulator;
 import net.imagej.ops.coloc.ThresholdMode;
 import net.imagej.ops.coloc.pearsons.PearsonsResult;
@@ -20,7 +21,7 @@ import org.scijava.plugin.Plugin;
  *
  * @author Ellen T Arena
  */
-@Plugin(type = Ops.Coloc.PearsonsClassic.class)
+@Plugin(type = Pearsons.class)
 public class PearsonsClassic<T extends RealType<T>, U extends RealType<U>>
 	extends AbstractBinaryFunctionOp<Iterable<T>, Iterable<U>, PearsonsResult>
 	implements Ops.Coloc.Pearsons
